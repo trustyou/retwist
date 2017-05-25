@@ -11,6 +11,11 @@ class MyDummyRequest(DummyRequest):
             self._finishedDeferreds = []
         return DummyRequest.notifyFinish(self)
 
+    @property
+    def path(self):
+        # "path" property is missing in DummyRequest for some reason
+        return "/" + "/".join(self.postpath)
+
 
 def _render(resource, request):
     """
