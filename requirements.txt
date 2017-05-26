@@ -1,1 +1,1 @@
-Twisted ~= 17.0
+Twisted
