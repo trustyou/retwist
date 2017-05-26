@@ -2,7 +2,7 @@ import pytest
 from twisted.web.error import Error
 from twisted.web.test.requesthelper import DummyRequest
 
-from retwist.param import BoolParam, EnumParam, LangParam, Param, VersionParam
+from retwist.param import BoolParam, EnumParam, IntParam, LangParam, Param, VersionParam
 
 
 @pytest.fixture
@@ -14,6 +14,7 @@ def dummy_request():
     # Mimic the way Twisted parses URL parameters:
     request.args = {
         "id": ["1234"],
+        "count": ["20"],
         "parent_id": [], # happens when you pass "parent_id="
         "child_id": ["a", "b"], # happens when you pass "child_id=a&child_id=b". Not supported by retwist
         "debug": ["true"],
@@ -83,6 +84,37 @@ def test_bool_param(dummy_request):
 
     with pytest.raises(Error) as exc_info:
         bool_param.parse_from_request("id", dummy_request)
+    assert exc_info.value.status == "400"
+
+
+def test_int_param(dummy_request):
+
+    int_param = IntParam()
+
+    val = int_param.parse_from_request("count", dummy_request)
+    assert val == 20
+
+    # Test error on malformed input
+
+    with pytest.raises(Error) as exc_info:
+        val = int_param.parse_from_request("lang", dummy_request)
+    assert exc_info.value.status == "400"
+
+    # Test minimum and maximum boundaries
+
+    int_param = IntParam(min_val=0, max_val=20)
+
+    val = int_param.parse_from_request("count", dummy_request)
+    assert val == 20
+
+    dummy_request.addArg("count", "-1")
+    with pytest.raises(Error) as exc_info:
+        val = int_param.parse_from_request("count", dummy_request)
+    assert exc_info.value.status == "400"
+
+    dummy_request.addArg("count", "21")
+    with pytest.raises(Error) as exc_info:
+        val = int_param.parse_from_request("count", dummy_request)
     assert exc_info.value.status == "400"
 
 

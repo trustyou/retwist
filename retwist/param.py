@@ -1,4 +1,3 @@
-import logging
 import re
 
 import twisted.web.error
@@ -61,6 +60,32 @@ class BoolParam(Param):
         if val == "true":
             return True
         raise twisted.web.error.Error(400, message="Boolean parameter must be 'true' or 'false'")
+
+
+class IntParam(Param):
+    """
+    Parse an integer.
+    """
+
+    def __init__(self, min_val=None, max_val=None, *args, **kwargs):
+        """
+        :param min_val: Raise error if value is smaller than this
+        :param max_val: Raise error if value is bigger than this
+        """
+        super(IntParam, self).__init__(*args, **kwargs)
+        self.min_val = min_val
+        self.max_val = max_val
+
+    def parse(self, val):
+        try:
+            val = int(val)
+        except (TypeError, ValueError):
+            raise twisted.web.error.Error(400, "Invalid integer: {}".format(val))
+        if self.min_val is not None and val < self.min_val:
+            raise twisted.web.error.Error(400, "Minimum value {}".format(self.min_val))
+        if self.max_val is not None and val > self.max_val:
+            raise twisted.web.error.Error(400, "Maximum value {}".format(self.max_val))
+        return val
 
 
 class EnumParam(Param):
