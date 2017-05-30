@@ -41,6 +41,23 @@ class JsonResource(retwist.param_resource.ParamResource):
 
         raise NotImplementedError()
 
+    def render(self, request):
+        """
+        Before we render this request as normal, parse parameters, and add them to the request! Also, catch any errors
+        during parameter parsing, and show them appropriately.
+        :param request: Twisted request object
+        :return: Byte string or NOT_DONE_YET - see IResource.render
+        """
+        try:
+            request.url_args = self.parse_args(request)
+        except:
+            # Catch-all is OK, since the failure object will pick up the exception
+            failure = twisted.python.failure.Failure()
+            self.send_failure(failure, request)
+            return twisted.web.server.NOT_DONE_YET
+        else:
+            return twisted.web.resource.Resource.render(self, request)
+
     def render_GET(self, request):
         """
         Get JSON data from json_GET, and render for the client.

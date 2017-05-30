@@ -13,7 +13,7 @@ class ParamResource(twisted.web.resource.Resource):
     
     age = retwist.Param()
     
-    They are made available to you in render_* methods by calling self.parse_args(request)
+    You can then retrieve parameters by calling parse_args(request) in your render_* method.
     """
 
     def parse_args(self, request):

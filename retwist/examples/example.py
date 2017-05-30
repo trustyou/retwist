@@ -10,13 +10,13 @@ class EchoPage(retwist.JsonResource):
     id = retwist.Param(required=True)
 
     def json_GET(self, request):
-        return self.parse_args(request)
+        return request.url_args
 
 
 if __name__ == "__main__":
 
-    site = retwist.PathSite()
-    site.addPath(r"/echo", EchoPage)
+    site = retwist.RouteSite()
+    site.addRoute(r"/echo", EchoPage())
 
     port = 8080
     twisted.internet.reactor.listenTCP(port, site)

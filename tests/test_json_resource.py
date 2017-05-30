@@ -13,7 +13,7 @@ class EchoArgsPage(retwist.JsonResource):
     show_details = retwist.BoolParam()
 
     def json_GET(self, request):
-        return self.parse_args(request)
+        return request.url_args
 
 
 @pytest.inlineCallbacks
@@ -40,6 +40,24 @@ def test_json_resource():
 
 
 @pytest.inlineCallbacks
+def test_param_error():
+    """
+    Test that errors during parsing parameters return a correct error document.
+    """
+
+    # Will produce error since required "id" is missing
+    request = MyDummyRequest("/")
+    resource = EchoArgsPage()
+    yield _render(resource, request)
+
+    assert request.responseCode == 400
+    response_str = "".join(request.written)
+    # Check that the error is valid JSON, that's all we want
+    json.loads(response_str)
+
+
+
+@pytest.inlineCallbacks
 def test_jsonp():
 
     # Check that response is wrapped in callback
@@ -60,6 +78,7 @@ def test_jsonp():
 
     request = MyDummyRequest("/")
     evil_callback = "alert('hi');"
+    request.addArg("id", "1234")
     request.addArg("callback", evil_callback)
 
     resource = EchoArgsPage()
