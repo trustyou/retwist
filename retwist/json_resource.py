@@ -2,7 +2,8 @@ import codecs
 import json
 import logging
 import re
-import traceback
+import sys
+import traceback as _traceback
 
 try:
     from inspect import iscoroutinefunction
@@ -39,16 +40,13 @@ class JsonResource(retwist.param_resource.ParamResource):
         :param o: Object which cannot be JSON-serialized.
         :return: JSON-serializable object (or throw TypeError)
         """
-
-        raise TypeError()
+        raise TypeError("Can't JSON serialize {}".format(type(o).__name__))
 
     def json_GET(self, request):
         """
         Override this to return JSON data to render.
-        
         :param request: Twisted request.
         """
-
         raise NotImplementedError()
 
     def render(self, request):
@@ -110,7 +108,6 @@ class JsonResource(retwist.param_resource.ParamResource):
         :param status_code: HTTP status code
         :param status_message: Optional status message, e.g. error message
         """
-
         is_jsonp = len(request.args.get(b"callback", [])) == 1
         if is_jsonp:
             callback = request.args[b"callback"][0]
@@ -132,52 +129,63 @@ class JsonResource(retwist.param_resource.ParamResource):
 
         request.finish()
 
-    def log_server_error(self, failure, request):
+    def log_server_error(self, exception, request, traceback):
         """
         Oh no, a server error happened! Log it. The request is just passed for inspection; don't modify it.
         
-        :param failure: Twisted failure instance, wrapping an exception 
+        :param exception: Exception instance
         :param request: Twisted request
-        :return: 
+        :param traceback: Traceback object
         """
-
-        error_msg = failure.getErrorMessage()
-        exception = failure.value
-        tb = failure.getTracebackObject()
-        tb_list = traceback.extract_tb(tb)
-        tb_formatted = traceback.format_list(tb_list)
+        error_msg = str(exception)
+        tb = traceback or sys.last_traceback
+        tb_list = _traceback.extract_tb(tb)
+        tb_formatted = _traceback.format_list(tb_list)
         tb_str = "".join(tb_formatted)
         logging.error("%s (%s) @ %s\n%s", type(exception).__name__, error_msg, request.uri, tb_str)
 
     def send_failure(self, failure, request):
         """
-        Send an error to the client. For connection errors, we do nothing - no chance to send anything. For client
-        errors, we show an informative error message. For server errors, we show a generic message, and log the error.
+        Convenience errback to handle failures in Twisted deferreds.
         
         :param failure: Twisted failure
         :param request: Twisted request
         """
+        try:
+            return self.send_exception(failure.value, request, failure.getTracebackObject())
+        except Exception as ex:
+            logging.exception(ex)
+
+    def send_exception(self, exception, request, traceback=None):
+        """
+        Send an error to the client. For connection errors, we do nothing - no chance to send anything. For client
+        errors, we show an informative error message. For server errors, we show a generic message, and log the error.
+
+        :param exception: Exception instance
+        :param request: Twisted request
+        :param traceback: Traceback object - needs to be passed in from Twisted Failures
+        """
 
         # This happens if the client closed the connection, or something similar.
-        if failure.check(
-            twisted.internet.defer.CancelledError,
-            twisted.internet.error.ConnectionLost,
-            twisted.internet.error.ConnectionDone,
-            twisted.internet.error.ConnectError,
+        if any(isinstance(exception, exc_type) for exc_type in [
+                twisted.internet.defer.CancelledError,
+                twisted.internet.error.ConnectionLost,
+                twisted.internet.error.ConnectionDone,
+                twisted.internet.error.ConnectError
+            ]
         ):
             return
 
-        exception = failure.value
-        error_msg = failure.getErrorMessage()
+        error_msg = str(exception)
 
         # Client error
-        if failure.check(twisted.web.error.Error):
+        if isinstance(exception, twisted.web.error.Error):
             status_code = int(exception.status)
             if 400 <= status_code < 500:
                 return self.send_json_response(error_msg, request, status_code=status_code)
 
-        # Server error
-        self.log_server_error(failure, request)
+        # Server
+        self.log_server_error(exception, request, traceback)
         return self.send_json_response("Server-side error", request, status_code=500)
 
     def on_connection_closed(self, failure, deferred):
