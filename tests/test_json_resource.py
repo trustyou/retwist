@@ -22,16 +22,16 @@ def test_json_resource():
     Test regular synchronous JSON rendering.
     """
 
-    request = MyDummyRequest("/")
-    request.addArg("id", "1234")
-    request.addArg("show_details", "false")
+    request = MyDummyRequest([b"/"])
+    request.addArg(b"id", b"1234")
+    request.addArg(b"show_details", b"false")
 
     resource = EchoArgsPage()
 
     yield _render(resource, request)
 
-    response_str = "".join(request.written)
-    response = json.loads(response_str)
+    response_str = b"".join(request.written)
+    response = json.loads(response_str.decode())
 
     assert response == {
         "id": "1234",
@@ -46,14 +46,14 @@ def test_param_error():
     """
 
     # Will produce error since required "id" is missing
-    request = MyDummyRequest("/")
+    request = MyDummyRequest([b"/"])
     resource = EchoArgsPage()
     yield _render(resource, request)
 
     assert request.responseCode == 400
-    response_str = "".join(request.written)
+    response_str = b"".join(request.written)
     # Check that the error is valid JSON, that's all we want
-    json.loads(response_str)
+    json.loads(response_str.decode())
 
 
 
@@ -62,30 +62,30 @@ def test_jsonp():
 
     # Check that response is wrapped in callback
 
-    request = MyDummyRequest("/")
-    request.addArg("id", "1234")
-    request.addArg("callback", "myCallback")
+    request = MyDummyRequest([b"/"])
+    request.addArg(b"id", b"1234")
+    request.addArg(b"callback", b"myCallback")
 
     resource = EchoArgsPage()
 
     yield _render(resource, request)
 
-    response_str = "".join(request.written)
-    assert response_str.startswith("myCallback(")
-    assert response_str.endswith(")")
+    response_str = b"".join(request.written)
+    assert response_str.startswith(b"myCallback(")
+    assert response_str.endswith(b")")
 
     # Reject invalid callback
 
-    request = MyDummyRequest("/")
-    evil_callback = "alert('hi');"
-    request.addArg("id", "1234")
-    request.addArg("callback", evil_callback)
+    request = MyDummyRequest(b"/")
+    evil_callback = b"alert('hi');"
+    request.addArg(b"id", b"1234")
+    request.addArg(b"callback", evil_callback)
 
     resource = EchoArgsPage()
 
     yield _render(resource, request)
 
-    response_str = "".join(request.written)
+    response_str = b"".join(request.written)
     assert evil_callback not in response_str
     assert request.responseCode == 400
 
@@ -104,14 +104,14 @@ def test_async_json_resource():
     Make sure that asynchronous json_GET methods are supported.
     """
 
-    request = MyDummyRequest("/")
+    request = MyDummyRequest([b"/"])
 
     resource = AsyncPage()
 
     yield _render(resource, request)
 
-    response_str = "".join(request.written)
-    response = json.loads(response_str)
+    response_str = b"".join(request.written)
+    response = json.loads(response_str.decode())
 
     assert response == "All working"
 
@@ -137,7 +137,7 @@ def test_error_handling():
     Check that exceptions in json_GET result in a 500 response code.
     """
 
-    request = MyDummyRequest("/")
+    request = MyDummyRequest([b"/"])
 
     resource = BrokenPage()
 

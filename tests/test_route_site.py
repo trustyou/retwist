@@ -9,21 +9,21 @@ class HotelPage(twisted.web.resource.Resource):
 
     def render_GET(self, request):
         hotel_id = request.path_args["hotel_id"]
-        return str(hotel_id)
+        return hotel_id.encode()
 
 
 class RestaurantPage(twisted.web.resource.Resource):
 
     def render_GET(self, request):
         hotel_id = request.path_args[0]
-        return str(hotel_id)
+        return hotel_id.encode()
 
 
 @pytest.inlineCallbacks
 def test_route_site():
 
     root = twisted.web.resource.Resource()
-    root.putChild("default", HotelPage())
+    root.putChild(b"default", HotelPage())
 
     path_site = retwist.RouteSite(root)
 
@@ -33,7 +33,7 @@ def test_route_site():
 
     # Test that we get the correct request object
 
-    request = MyDummyRequest(["hotels", "1234", "info"])
+    request = MyDummyRequest([b"hotels", b"1234", b"info"])
     resource = path_site.getResourceFor(request)
     assert isinstance(resource, HotelPage)
     assert request.path_args == {
@@ -43,14 +43,14 @@ def test_route_site():
     # Test that request rendering receives tha arguments correctly
 
     yield _render(resource, request)
-    response_str = "".join(request.written)
-    assert response_str == "1234"
+    response_str = b"".join(request.written)
+    assert response_str == b"1234"
 
     # ... now let's add a path with unnamed parameters, which are passed as a tuple
 
     path_site.addRoute(r"/restaurants/(.*)/info", RestaurantPage())
 
-    request = MyDummyRequest(["restaurants", "5678", "info"])
+    request = MyDummyRequest([b"restaurants", b"5678", b"info"])
     resource = path_site.getResourceFor(request)
     assert isinstance(resource, RestaurantPage)
     assert request.path_args == ("5678",)
@@ -58,17 +58,17 @@ def test_route_site():
     # Again, test that rendering works as expected
 
     yield _render(resource, request)
-    response_str = "".join(request.written)
-    assert response_str == "5678"
+    response_str = b"".join(request.written)
+    assert response_str == b"5678"
 
     # Test the fallback to regular Twisted path resolution
 
-    request = MyDummyRequest(["default"])
+    request = MyDummyRequest([b"default"])
     resource = path_site.getResourceFor(request)
     assert isinstance(resource, HotelPage)
 
     # Test 404
 
-    request = MyDummyRequest(["some", "nonexistent", "path"])
+    request = MyDummyRequest([b"some", b"nonexistent", b"path"])
     resource = path_site.getResourceFor(request)
     assert isinstance(resource, twisted.web.resource.NoResource)

@@ -10,18 +10,18 @@ def dummy_request():
     """
     Dummy request with some arguments used by tests in this module.
     """
-    request = DummyRequest("/")
+    request = DummyRequest(b"/")
     # Mimic the way Twisted parses URL parameters:
     request.args = {
-        "id": ["1234"],
-        "count": ["20"],
-        "parent_id": [], # happens when you pass "parent_id="
-        "child_id": ["a", "b"], # happens when you pass "child_id=a&child_id=b". Not supported by retwist
-        "debug": ["true"],
-        "verbose": ["false"],
-        "type": ["int"],
-        "lang": ["de"],
-        "v": ["1.0"]
+        b"id": [b"1234"],
+        b"count": [b"20"],
+        b"parent_id": [], # happens when you pass "parent_id="
+        b"child_id": [b"a", b"b"], # happens when you pass "child_id=a&child_id=b". Not supported by retwist
+        b"debug": [b"true"],
+        b"verbose": [b"false"],
+        b"type": [b"int"],
+        b"lang": [b"de"],
+        b"v": [b"1.0"]
     }
     return request
 
@@ -38,11 +38,11 @@ def test_param(dummy_request):
 
     with pytest.raises(Error) as exc_info:
         param.parse_from_request("parent_id", dummy_request)
-    assert exc_info.value.status == "400"
+    assert exc_info.value.status == b"400"
 
     with pytest.raises(Error) as exc_info:
         param.parse_from_request("child_id", dummy_request)
-    assert exc_info.value.status == "400"
+    assert exc_info.value.status == b"400"
 
     with pytest.raises(ValueError):
         Param(required=True, default="required params shouldn't have a default")
@@ -66,7 +66,7 @@ def test_missing_params(dummy_request):
 
     with pytest.raises(Error) as exc_info:
         required_param.parse_from_request("missing_key", dummy_request)
-    assert exc_info.value.status == "400"
+    assert exc_info.value.status == b"400"
 
 
 def test_bool_param(dummy_request):
@@ -84,7 +84,7 @@ def test_bool_param(dummy_request):
 
     with pytest.raises(Error) as exc_info:
         bool_param.parse_from_request("id", dummy_request)
-    assert exc_info.value.status == "400"
+    assert exc_info.value.status == b"400"
 
 
 def test_int_param(dummy_request):
@@ -98,7 +98,7 @@ def test_int_param(dummy_request):
 
     with pytest.raises(Error) as exc_info:
         val = int_param.parse_from_request("lang", dummy_request)
-    assert exc_info.value.status == "400"
+    assert exc_info.value.status == b"400"
 
     # Test minimum and maximum boundaries
 
@@ -107,15 +107,15 @@ def test_int_param(dummy_request):
     val = int_param.parse_from_request("count", dummy_request)
     assert val == 20
 
-    dummy_request.addArg("count", "-1")
+    dummy_request.addArg(b"count", b"-1")
     with pytest.raises(Error) as exc_info:
         val = int_param.parse_from_request("count", dummy_request)
-    assert exc_info.value.status == "400"
+    assert exc_info.value.status == b"400"
 
-    dummy_request.addArg("count", "21")
+    dummy_request.addArg(b"count", b"21")
     with pytest.raises(Error) as exc_info:
         val = int_param.parse_from_request("count", dummy_request)
-    assert exc_info.value.status == "400"
+    assert exc_info.value.status == b"400"
 
 
 def test_enum_param(dummy_request):
@@ -127,7 +127,7 @@ def test_enum_param(dummy_request):
 
     with pytest.raises(Error) as exc_info:
         enum_param.parse_from_request("debug", dummy_request)
-    assert exc_info.value.status == "400"
+    assert exc_info.value.status == b"400"
 
 
 def test_lang_param(dummy_request):
@@ -139,7 +139,7 @@ def test_lang_param(dummy_request):
 
     # Fall back to default
 
-    del dummy_request.args["lang"]
+    del dummy_request.args[b"lang"]
 
     val = lang_param.parse_from_request("lang", dummy_request)
     assert val == "en"
@@ -166,8 +166,8 @@ def test_version_param(dummy_request):
 
     # Handle malformed version
 
-    dummy_request.args["v"] = ["derp"]
+    dummy_request.args[b"v"] = [b"derp"]
 
     with pytest.raises(Error) as exc_info:
         version_param.parse_from_request("v", dummy_request)
-    assert exc_info.value.status == "400"
+    assert exc_info.value.status == b"400"

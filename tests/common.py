@@ -14,7 +14,7 @@ class MyDummyRequest(DummyRequest):
     @property
     def path(self):
         # "path" property is missing in DummyRequest for some reason
-        return "/" + "/".join(self.postpath)
+        return b"/" + b"/".join(self.postpath)
 
 
 def _render(resource, request):
@@ -25,7 +25,7 @@ def _render(resource, request):
     :return: Deferred 
     """
     result = resource.render(request)
-    if isinstance(result, str):
+    if isinstance(result, bytes):
         request.write(result)
         request.finish()
         return twisted.internet.defer.succeed(None)

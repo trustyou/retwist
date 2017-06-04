@@ -12,8 +12,8 @@ class DemoPage(retwist.ParamResource):
 def test_param_resource():
 
     request = DummyRequest("/")
-    request.addArg("id", "1234")
-    request.addArg("show_details", "false")
+    request.addArg(b"id", b"1234")
+    request.addArg(b"show_details", b"false")
 
     resource = DemoPage()
     args = resource.parse_args(request)

@@ -43,7 +43,8 @@ class RouteSite(twisted.web.server.Site):
         """
         request.site = self
         for route_re, resource in self.routes.items():
-            match = route_re.match(request.path)
+            path = request.path.decode()
+            match = route_re.match(path)
             if match:
                 request.path_args = match.groupdict() or match.groups()
                 return resource

@@ -26,18 +26,19 @@ class Param(object):
         :param request: Twisted request object
         :return: Parsed value
         """
-        if name not in request.args:
+        name_bytes = name.encode()
+        if name_bytes not in request.args:
             if self.default is not None:
                 return self.default
             if self.required:
-                raise twisted.web.error.Error(400, message="{} is required".format(name))
+                raise twisted.web.error.Error(400, message=b"%s is required" % name_bytes)
             else:
                 return None
 
-        if len(request.args[name]) != 1:
-            raise twisted.web.error.Error(400, message="Pass exactly one argument for {}".format(name))
+        if len(request.args[name_bytes]) != 1:
+            raise twisted.web.error.Error(400, message=b"Pass exactly one argument for %s" % name_bytes)
 
-        val = request.args[name][0]
+        val = request.args[name_bytes][0]
         return self.parse(val)
 
     def parse(self, val):
@@ -46,7 +47,7 @@ class Param(object):
         :param val: Value as received in URL
         :return: Parsed value
         """
-        return val
+        return val.decode()
 
 
 class BoolParam(Param):
@@ -55,11 +56,12 @@ class BoolParam(Param):
     """
 
     def parse(self, val):
+        val = val.decode()
         if val is None or val == "false":
             return False
         if val == "true":
             return True
-        raise twisted.web.error.Error(400, message="Boolean parameter must be 'true' or 'false'")
+        raise twisted.web.error.Error(400, message=b"Boolean parameter must be 'true' or 'false'")
 
 
 class IntParam(Param):
@@ -77,14 +79,15 @@ class IntParam(Param):
         self.max_val = max_val
 
     def parse(self, val):
+        val = val.decode()
         try:
             val = int(val)
         except (TypeError, ValueError):
-            raise twisted.web.error.Error(400, "Invalid integer: {}".format(val))
+            raise twisted.web.error.Error(400, b"Invalid integer: %s" % val.encode())
         if self.min_val is not None and val < self.min_val:
-            raise twisted.web.error.Error(400, "Minimum value {}".format(self.min_val))
+            raise twisted.web.error.Error(400, b"Minimum value %d" % self.min_val)
         if self.max_val is not None and val > self.max_val:
-            raise twisted.web.error.Error(400, "Maximum value {}".format(self.max_val))
+            raise twisted.web.error.Error(400, b"Minimum value %d" % self.max_val)
         return val
 
 
@@ -101,8 +104,9 @@ class EnumParam(Param):
         self.enum = frozenset(enum)
 
     def parse(self, val):
+        val = val.decode()
         if val not in self.enum:
-            error_msg = "Parameter must be one of {}".format(sorted(self.enum))
+            error_msg = b"Parameter must be one of %s" % str(sorted(self.enum)).encode()
             raise twisted.web.error.Error(400, error_msg)
         return val
 
@@ -115,7 +119,7 @@ class LangParam(Param):
     accept_language_re = re.compile("([a-z]{1,8}(?:-[a-z]{1,8})?)\s*(?:;\s*q\s*=\s*(1|0\.[0-9]+))?", re.IGNORECASE)
 
     def parse_from_request(self, name, request):
-        if "lang" in request.args:
+        if b"lang" in request.args:
             return super(LangParam, self).parse_from_request(name, request)
         return self.infer_lang(request)
 
@@ -156,7 +160,8 @@ class VersionParam(Param):
     """
 
     def parse(self, val):
+        val = val.decode()
         try:
             return tuple(map(int, val.split(".")))
         except (TypeError, ValueError):
-            raise twisted.web.error.Error(400, "Invalid version literal")
+            raise twisted.web.error.Error(400, b"Invalid version literal")

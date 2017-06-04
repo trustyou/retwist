@@ -1,3 +1,4 @@
+import codecs
 import json
 import logging
 import re
@@ -19,8 +20,10 @@ class JsonResource(retwist.param_resource.ParamResource):
     """
 
     encoding = "utf-8"
+    # Factory function for a UTF-8 stream encoder:
+    create_writer = codecs.getwriter(encoding)
 
-    jsonp_callback_re = re.compile("^[_a-zA-Z0-9\.$]+$")
+    jsonp_callback_re = re.compile(b"^[_a-zA-Z0-9\.$]+$")
 
     @classmethod
     def json_dump_default(cls, o):
@@ -97,23 +100,24 @@ class JsonResource(retwist.param_resource.ParamResource):
         :param status_message: Optional status message, e.g. error message
         """
 
-        is_jsonp = len(request.args.get("callback", [])) == 1
+        is_jsonp = len(request.args.get(b"callback", [])) == 1
         if is_jsonp:
-            callback = request.args["callback"][0]
+            callback = request.args[b"callback"][0]
             if not self.jsonp_callback_re.match(callback):
-                del request.args["callback"]
+                del request.args[b"callback"]
                 return self.send_json_response("Invalid callback", request, status_code=400)
-            request.setHeader("Content-Type", "application/javascript; charset=utf-8")
-            request.write(callback + "(")
+            request.setHeader(b"Content-Type", b"application/javascript; charset=%s" % self.encoding.encode())
+            request.write(callback + b"(")
         else:
-            request.setHeader("Content-Type", "application/json; charset=utf-8")
+            request.setHeader(b"Content-Type", b"application/json; charset=%s" % self.encoding.encode())
             request.setResponseCode(status_code)
 
         response = self.response_envelope(response, status_code=status_code, status_message=status_message)
-        json.dump(response, request, allow_nan=False, default=self.json_dump_default)
+        stream = self.create_writer(request)
+        json.dump(response, stream, allow_nan=False, default=self.json_dump_default)
 
         if is_jsonp:
-            request.write(")")
+            request.write(b")")
 
         request.finish()
 
