@@ -4,6 +4,13 @@ import logging
 import re
 import traceback
 
+try:
+    from inspect import iscoroutinefunction
+except ImportError:
+    # We must be on Python < 3.5!
+    def iscoroutinefunction(func):
+        return False
+
 import twisted.internet.defer
 import twisted.internet.error
 import twisted.python.failure
@@ -68,8 +75,12 @@ class JsonResource(retwist.param_resource.ParamResource):
         Do not override in sub classes ...
         :param request: Twisted request
         """
+        if iscoroutinefunction(self.json_GET):
+            coroutine = self.json_GET(request)
+            json_def = twisted.internet.defer.ensureDeferred(coroutine)
+        else:
+            json_def = twisted.internet.defer.maybeDeferred(self.json_GET, request)
 
-        json_def = twisted.internet.defer.maybeDeferred(self.json_GET, request)
         json_def.addCallback(self.send_json_response, request)
         json_def.addErrback(self.send_failure, request)
 
