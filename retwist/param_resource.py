@@ -1,5 +1,7 @@
 import inspect
+from typing import Any, Dict
 
+import twisted.web.http
 import twisted.web.resource
 
 import retwist.param
@@ -17,6 +19,7 @@ class ParamResource(twisted.web.resource.Resource):
     """
 
     def parse_args(self, request):
+        # type: (twisted.web.http.Request) -> Dict[str, Any]
         """
         Parse arguments from request. Throws twisted.web.error.Error instances on client errors.
         

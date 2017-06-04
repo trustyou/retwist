@@ -1,6 +1,8 @@
 import collections
+from typing import Any, Callable, Iterable
 
 import twisted.internet.defer
+import twisted.python.failure
 
 
 class LimitedDeferredList(twisted.internet.defer.Deferred):
@@ -19,6 +21,7 @@ class LimitedDeferredList(twisted.internet.defer.Deferred):
     """
 
     def __init__(self, deferred_factories, max_concurrent):
+        # type: (Iterable[Callable[[], twisted.internet.defer.Deferred]], int) ->None
         """
         :param deferred_factories: A list of callables which, when invoked without arguments, return a Deferred.
         :param max_concurrent: Run no more than max_concurrent Deferreds at the same time.
@@ -38,6 +41,7 @@ class LimitedDeferredList(twisted.internet.defer.Deferred):
             self.__schedule_deferred()
 
     def __deferred_callback(self, result, index):
+        # type: (Any, int) -> None
         """
         Callback for every one of the scheduled Deferreds.
         :param result: Result of the Deferred
@@ -51,6 +55,7 @@ class LimitedDeferredList(twisted.internet.defer.Deferred):
             self.callback(self.results)
 
     def __deferred_errback(self, failure):
+        # type: (twisted.python.failure.Failure) -> None
         """
         Errback for every one of the scheduled Deferreds. Make the whole LimitedDeferredList fail.
         :param failure: Failure object
@@ -59,6 +64,7 @@ class LimitedDeferredList(twisted.internet.defer.Deferred):
         self.errback(failure)
 
     def __schedule_deferred(self):
+        # type: () -> bool
         """
         Schedule the next available Deferred.
         :return: True if a Deferred was scheduled, False if not (i.e. we're done with our work)

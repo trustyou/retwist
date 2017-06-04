@@ -1,6 +1,8 @@
 import re
+from typing import Any, Iterable, List, Tuple
 
 import twisted.web.error
+import twisted.web.http
 
 
 class Param(object):
@@ -9,6 +11,7 @@ class Param(object):
     """
 
     def __init__(self, required=False, default=None):
+        # type: (bool, Any) -> None
         """
         :param required: Throw 400 error if parameter is missing
         :param default: Default value, in case parameter missing 
@@ -20,6 +23,7 @@ class Param(object):
         self.default = default
 
     def parse_from_request(self, name, request):
+        # type: (str, twisted.web.http.Request) -> Any
         """
         Parse parameter by name from request object. Throws 400 client error if parameter is required, but missing.
         :param name: Name of parameter in query
@@ -42,6 +46,7 @@ class Param(object):
         return self.parse(val)
 
     def parse(self, val):
+        # type: (bytes) -> Any
         """
         Parse parameter from raw string from URL query. Override this for custom parsing behavior.
         :param val: Value as received in URL
@@ -56,10 +61,11 @@ class BoolParam(Param):
     """
 
     def parse(self, val):
-        val = val.decode()
-        if val is None or val == "false":
+        # type: (bytes) -> bool
+        val_str = val.decode()
+        if val_str is None or val_str == "false":
             return False
-        if val == "true":
+        if val_str == "true":
             return True
         raise twisted.web.error.Error(400, message=b"Boolean parameter must be 'true' or 'false'")
 
@@ -70,6 +76,7 @@ class IntParam(Param):
     """
 
     def __init__(self, min_val=None, max_val=None, *args, **kwargs):
+        # type: (int, int, *Any, **Any) -> None
         """
         :param min_val: Raise error if value is smaller than this
         :param max_val: Raise error if value is bigger than this
@@ -79,16 +86,17 @@ class IntParam(Param):
         self.max_val = max_val
 
     def parse(self, val):
-        val = val.decode()
+        # type: (bytes) -> int
+        val_str = val.decode()
         try:
-            val = int(val)
+            val_int = int(val_str)
         except (TypeError, ValueError):
-            raise twisted.web.error.Error(400, b"Invalid integer: %s" % val.encode())
-        if self.min_val is not None and val < self.min_val:
+            raise twisted.web.error.Error(400, b"Invalid integer: %s" % val)
+        if self.min_val is not None and val_int < self.min_val:
             raise twisted.web.error.Error(400, b"Minimum value %d" % self.min_val)
-        if self.max_val is not None and val > self.max_val:
+        if self.max_val is not None and val_int > self.max_val:
             raise twisted.web.error.Error(400, b"Minimum value %d" % self.max_val)
-        return val
+        return val_int
 
 
 class EnumParam(Param):
@@ -97,6 +105,7 @@ class EnumParam(Param):
     """
 
     def __init__(self, enum, *args, **kwargs):
+        # type: (Iterable[str], *Any, **Any) -> None
         """
         :param enum: List/tuple of allowed values, e.g. ("enabled", "disabled") 
         """
@@ -104,11 +113,12 @@ class EnumParam(Param):
         self.enum = frozenset(enum)
 
     def parse(self, val):
-        val = val.decode()
-        if val not in self.enum:
+        # type: (bytes) -> str
+        val_str = val.decode()
+        if val_str not in self.enum:
             error_msg = b"Parameter must be one of %s" % str(sorted(self.enum)).encode()
             raise twisted.web.error.Error(400, error_msg)
-        return val
+        return val_str
 
 
 class LangParam(Param):
@@ -119,12 +129,14 @@ class LangParam(Param):
     accept_language_re = re.compile("([a-z]{1,8}(?:-[a-z]{1,8})?)\s*(?:;\s*q\s*=\s*(1|0\.[0-9]+))?", re.IGNORECASE)
 
     def parse_from_request(self, name, request):
+        # type: (str, twisted.web.http.Request) -> str
         if b"lang" in request.args:
             return super(LangParam, self).parse_from_request(name, request)
         return self.infer_lang(request)
 
     @classmethod
     def parse_accept_language(cls, accept_language_str):
+        # type: (str) -> List[Tuple[str, str]]
         """
         Parse a list of accepted languages from an HTTP header.
         :param accept_language_str: HTTP Accept-Language value
@@ -140,6 +152,7 @@ class LangParam(Param):
         )
 
     def infer_lang(self, request):
+        # type: (twisted.web.http.Request) -> str
         http_header = request.getHeader("Accept-Language")
         if http_header:
             try:
@@ -160,8 +173,9 @@ class VersionParam(Param):
     """
 
     def parse(self, val):
-        val = val.decode()
+        # type: (bytes) -> Tuple[int, ...]
+        val_str = val.decode()
         try:
-            return tuple(map(int, val.split(".")))
+            return tuple(map(int, val_str.split(".")))
         except (TypeError, ValueError):
             raise twisted.web.error.Error(400, b"Invalid version literal")

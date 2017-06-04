@@ -1,9 +1,13 @@
 import logging
+from typing import Set
 
 import twisted.internet.defer
+from twisted.internet.interfaces import IListeningPort, IReactorCore
+import twisted.web.server
 
 
 def wait_on_shutdown(reactor, site, port, timeout):
+    # type: (IReactorCore, twisted.web.server.Site, IListeningPort, float) -> None
     """
     Change a running site to wait for pending requests on shutdown.
 
@@ -12,10 +16,10 @@ def wait_on_shutdown(reactor, site, port, timeout):
 
     :param reactor: Reactor that is running your site, likely twisted.internet.reactor
     :param site: twisted.web.server.Site instance which is serving requests
-    :param port: twisted.internet.interfaces.IListeningPort instance, e.g. as returned by reactor.listenTCP
+    :param port: IListeningPort instance, e.g. as returned by reactor.listenTCP
     :param timeout: Timeout in seconds after which pending requests are canceled and shutdown is forced
     """
-    running_reqs = set()
+    running_reqs = set()  # type: Set[int]
     wrapped_request_factory = site.requestFactory
 
     def request_factory(*args, **kwargs):
@@ -69,3 +73,4 @@ def wait_on_shutdown(reactor, site, port, timeout):
 
     site.requestFactory = request_factory
     reactor.addSystemEventTrigger("before", "shutdown", shutdown)
+

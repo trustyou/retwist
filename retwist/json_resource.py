@@ -4,12 +4,14 @@ import logging
 import re
 import sys
 import traceback as _traceback
+from typing import Any, Callable, Dict, IO
 
 try:
     from inspect import iscoroutinefunction
 except ImportError:
     # We must be on Python < 3.5!
     def iscoroutinefunction(func):
+        # type: (Callable) -> bool
         return False
 
 import twisted.internet.defer
@@ -17,6 +19,7 @@ import twisted.internet.error
 import twisted.python.failure
 import twisted.web.error
 import twisted.web.resource
+import twisted.web.http
 import twisted.web.server
 
 import retwist.param_resource
@@ -43,6 +46,7 @@ class JsonResource(retwist.param_resource.ParamResource):
         raise TypeError("Can't JSON serialize {}".format(type(o).__name__))
 
     def json_GET(self, request):
+        # type: (twisted.web.http.Request) -> Dict
         """
         Override this to return JSON data to render.
         :param request: Twisted request.
@@ -88,6 +92,7 @@ class JsonResource(retwist.param_resource.ParamResource):
         return twisted.web.server.NOT_DONE_YET
 
     def response_envelope(self, response, status_code=200, status_message=None):
+        # type: (Any, int, str) -> Any
         """
         Implement this to transform JSON responses before sending, e.g. by putting HTTP status codes in the response.
         
@@ -96,10 +101,10 @@ class JsonResource(retwist.param_resource.ParamResource):
         :param status_message: Optional status message, e.g. error message
         :return: Wrapped JSON-serializable data
         """
-
         return response
 
     def send_json_response(self, response, request, status_code=200, status_message=None):
+        # type: (Any, twisted.web.http.Request, int, str) -> None
         """
         Send JSON data to client.
         
@@ -130,6 +135,7 @@ class JsonResource(retwist.param_resource.ParamResource):
         request.finish()
 
     def log_server_error(self, exception, request, traceback):
+        # type: (Exception, twisted.web.http.Request, Any) -> None
         """
         Oh no, a server error happened! Log it. The request is just passed for inspection; don't modify it.
         
@@ -145,6 +151,7 @@ class JsonResource(retwist.param_resource.ParamResource):
         logging.error("%s (%s) @ %s\n%s", type(exception).__name__, error_msg, request.uri, tb_str)
 
     def send_failure(self, failure, request):
+        # type: (twisted.python.failure.Failure, twisted.web.http.Request) -> None
         """
         Convenience errback to handle failures in Twisted deferreds.
         
@@ -154,9 +161,10 @@ class JsonResource(retwist.param_resource.ParamResource):
         try:
             return self.send_exception(failure.value, request, failure.getTracebackObject())
         except Exception as ex:
-            logging.exception(ex)
+            logging.exception(str(ex))
 
     def send_exception(self, exception, request, traceback=None):
+        # type: (Exception, twisted.web.http.Request, Any) -> None
         """
         Send an error to the client. For connection errors, we do nothing - no chance to send anything. For client
         errors, we show an informative error message. For server errors, we show a generic message, and log the error.
@@ -180,7 +188,8 @@ class JsonResource(retwist.param_resource.ParamResource):
 
         # Client error
         if isinstance(exception, twisted.web.error.Error):
-            status_code = int(exception.status)
+            web_error = exception  # type: twisted.web.error.Error
+            status_code = int(web_error.status)
             if 400 <= status_code < 500:
                 return self.send_json_response(error_msg, request, status_code=status_code)
 
@@ -189,6 +198,7 @@ class JsonResource(retwist.param_resource.ParamResource):
         return self.send_json_response("Server-side error", request, status_code=500)
 
     def on_connection_closed(self, failure, deferred):
+        # type: (twisted.python.failure.Failure, twisted.internet.defer.Deferred) -> None
         """
         Handle connection errors.
         
