@@ -62,10 +62,8 @@ class JsonResource(retwist.param_resource.ParamResource):
         """
         try:
             request.url_args = self.parse_args(request)
-        except:
-            # Catch-all is OK, since the failure object will pick up the exception
-            failure = twisted.python.failure.Failure()
-            self.send_failure(failure, request)
+        except Exception as ex:
+            self.handle_exception(ex, request)
             return twisted.web.server.NOT_DONE_YET
         else:
             return twisted.web.resource.Resource.render(self, request)
@@ -84,7 +82,7 @@ class JsonResource(retwist.param_resource.ParamResource):
             json_def = twisted.internet.defer.maybeDeferred(self.json_GET, request)
 
         json_def.addCallback(self.send_json_response, request)
-        json_def.addErrback(self.send_failure, request)
+        json_def.addErrback(self.handle_failure, request)
 
         # handle connection failures
         request.notifyFinish().addErrback(self.on_connection_closed, json_def)
@@ -150,7 +148,7 @@ class JsonResource(retwist.param_resource.ParamResource):
         tb_str = "".join(tb_formatted)
         logging.error("%s (%s) @ %s\n%s", type(exception).__name__, error_msg, request.uri, tb_str)
 
-    def send_failure(self, failure, request):
+    def handle_failure(self, failure, request):
         # type: (twisted.python.failure.Failure, twisted.web.http.Request) -> None
         """
         Convenience errback to handle failures in Twisted deferreds.
@@ -158,12 +156,10 @@ class JsonResource(retwist.param_resource.ParamResource):
         :param failure: Twisted failure
         :param request: Twisted request
         """
-        try:
-            return self.send_exception(failure.value, request, failure.getTracebackObject())
-        except Exception as ex:
-            logging.exception(str(ex))
 
-    def send_exception(self, exception, request, traceback=None):
+        self.handle_exception(failure.value, request, failure.getTracebackObject())
+
+    def handle_exception(self, exception, request, traceback=None):
         # type: (Exception, twisted.web.http.Request, Any) -> None
         """
         Send an error to the client. For connection errors, we do nothing - no chance to send anything. For client
@@ -175,27 +171,35 @@ class JsonResource(retwist.param_resource.ParamResource):
         """
 
         # This happens if the client closed the connection, or something similar.
-        if any(isinstance(exception, exc_type) for exc_type in [
+        if any(isinstance(exception, exc_type) for exc_type in {
                 twisted.internet.defer.CancelledError,
                 twisted.internet.error.ConnectionLost,
                 twisted.internet.error.ConnectionDone,
                 twisted.internet.error.ConnectError
-            ]
+            }
         ):
             return
-
-        error_msg = str(exception)
 
         # Client error
         if isinstance(exception, twisted.web.error.Error):
             web_error = exception  # type: twisted.web.error.Error
             status_code = int(web_error.status)
             if 400 <= status_code < 500:
-                return self.send_json_response(error_msg, request, status_code=status_code)
+                message = str(exception)
+                self.send_error(status_code, message, request)
+                return
 
         # Server
         self.log_server_error(exception, request, traceback)
-        return self.send_json_response("Server-side error", request, status_code=500)
+        self.send_error(500, "Server-side error", request)
+
+    def send_error(self, status_code, message, request):
+        # type: (int, str, twisted.web.http.Request) -> None
+        """
+        Send error message to the client.
+        """
+
+        self.send_json_response(message, request, status_code=status_code)
 
     def on_connection_closed(self, failure, deferred):
         # type: (twisted.python.failure.Failure, twisted.internet.defer.Deferred) -> None
