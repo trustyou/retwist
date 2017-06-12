@@ -1,18 +1,18 @@
 import pytest
-import twisted.web.resource
+from twisted.web.resource import NoResource, Resource
 
 import retwist
 from tests.common import MyDummyRequest, _render
 
 
-class HotelPage(twisted.web.resource.Resource):
+class HotelPage(Resource):
 
     def render_GET(self, request):
         hotel_id = request.path_args["hotel_id"]
         return hotel_id.encode()
 
 
-class RestaurantPage(twisted.web.resource.Resource):
+class RestaurantPage(Resource):
 
     def render_GET(self, request):
         hotel_id = request.path_args[0]
@@ -22,7 +22,7 @@ class RestaurantPage(twisted.web.resource.Resource):
 @pytest.inlineCallbacks
 def test_route_site():
 
-    root = twisted.web.resource.Resource()
+    root = Resource()
     root.putChild(b"default", HotelPage())
 
     path_site = retwist.RouteSite(root)
@@ -71,4 +71,4 @@ def test_route_site():
 
     request = MyDummyRequest([b"some", b"nonexistent", b"path"])
     resource = path_site.getResourceFor(request)
-    assert isinstance(resource, twisted.web.resource.NoResource)
+    assert isinstance(resource, NoResource)

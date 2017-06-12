@@ -1,11 +1,11 @@
 import collections
 from typing import Any, Callable, Iterable
 
-import twisted.internet.defer
-import twisted.python.failure
+from twisted.internet.defer import Deferred
+from twisted.python.failure import Failure
 
 
-class LimitedDeferredList(twisted.internet.defer.Deferred):
+class LimitedDeferredList(Deferred):
     """
     Run a list of Deferreds in parallel, much like DeferredList, but limit the number of concurrently executed
     Deferreds.
@@ -21,12 +21,12 @@ class LimitedDeferredList(twisted.internet.defer.Deferred):
     """
 
     def __init__(self, deferred_factories, max_concurrent):
-        # type: (Iterable[Callable[[], twisted.internet.defer.Deferred]], int) ->None
+        # type: (Iterable[Callable[[], Deferred]], int) -> None
         """
         :param deferred_factories: A list of callables which, when invoked without arguments, return a Deferred.
         :param max_concurrent: Run no more than max_concurrent Deferreds at the same time.
         """
-        twisted.internet.defer.Deferred.__init__(self)
+        Deferred.__init__(self)
 
         # Index the Deferreds so we can order the results when they callback
         indexed_factories = enumerate(deferred_factories)
@@ -55,7 +55,7 @@ class LimitedDeferredList(twisted.internet.defer.Deferred):
             self.callback(self.results)
 
     def __deferred_errback(self, failure):
-        # type: (twisted.python.failure.Failure) -> None
+        # type: (Failure) -> None
         """
         Errback for every one of the scheduled Deferreds. Make the whole LimitedDeferredList fail.
         :param failure: Failure object
@@ -72,7 +72,7 @@ class LimitedDeferredList(twisted.internet.defer.Deferred):
         if self.deferred_factories:
             self.counter += 1
             index, deferred_factory = self.deferred_factories.pop()
-            deferred = deferred_factory()
+            deferred = deferred_factory()  # type: Deferred
             deferred.addCallback(self.__deferred_callback, index)
             deferred.addErrback(self.__deferred_errback)
             return True

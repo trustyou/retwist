@@ -1,4 +1,4 @@
-import twisted.internet.reactor
+from twisted.internet import reactor
 
 import retwist
 
@@ -19,11 +19,11 @@ if __name__ == "__main__":
     site.addRoute(r"/echo", EchoPage())
 
     port = 8080
-    twisted.internet.reactor.listenTCP(port, site)
+    reactor.listenTCP(port, site)
 
     print("Demo starting ... now try these requests:")
     print("http://localhost:{}/echo?id=1234 (Should echo parameter)".format(port))
     print("http://localhost:{}/echo (Returns error, since 'id' is required)".format(port))
     print("Interrupt with Ctrl+C to quit")
 
-    twisted.internet.reactor.run()
+    reactor.run()

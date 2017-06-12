@@ -127,7 +127,7 @@ class BrokenPage(retwist.JsonResource):
         _ = yield task.deferLater(reactor, 0.001, lambda: None / 0.0)
         defer.returnValue("Successfully divided by zero!")
 
-    def log_server_error(self, failure, request, traceback=None):
+    def log_server_error(self, exception, request, traceback):
         self.failed = True
 
 

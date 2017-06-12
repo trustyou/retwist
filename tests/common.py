@@ -1,5 +1,9 @@
-import twisted.internet.defer
-import twisted.web.server
+from typing import Any
+
+from twisted.internet.defer import succeed
+from twisted.web.http import Request
+from twisted.web.resource import Resource
+from twisted.web.server import NOT_DONE_YET
 from twisted.web.test.requesthelper import DummyRequest
 
 
@@ -18,6 +22,7 @@ class MyDummyRequest(DummyRequest):
 
 
 def _render(resource, request):
+    # type: (Resource, Request) -> Any
     """
     Simulate rendering of a Twisted resource.
     :param resource: Twisted Resource with render() method.
@@ -28,10 +33,10 @@ def _render(resource, request):
     if isinstance(result, bytes):
         request.write(result)
         request.finish()
-        return twisted.internet.defer.succeed(None)
-    elif result is twisted.web.server.NOT_DONE_YET:
+        return succeed(None)
+    elif result == NOT_DONE_YET:
         if request.finished:
-            return twisted.internet.defer.succeed(None)
+            return succeed(None)
         else:
             return request.notifyFinish()
     else:

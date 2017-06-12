@@ -1,13 +1,13 @@
 import inspect
 from typing import Any, Dict
 
-import twisted.web.http
-import twisted.web.resource
+from twisted.web.http import Request
+from twisted.web.resource import Resource
 
 import retwist.param
 
 
-class ParamResource(twisted.web.resource.Resource):
+class ParamResource(Resource):
     """
     Twisted resource with convenient parsing of parameters.
     
@@ -19,7 +19,7 @@ class ParamResource(twisted.web.resource.Resource):
     """
 
     def parse_args(self, request):
-        # type: (twisted.web.http.Request) -> Dict[str, Any]
+        # type: (Request) -> Dict[str, Any]
         """
         Parse arguments from request. Throws twisted.web.error.Error instances on client errors.
         

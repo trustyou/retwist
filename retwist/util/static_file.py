@@ -1,11 +1,12 @@
-import twisted.web.error
-import twisted.web.static
+from twisted.web.error import Error
+from twisted.web.http import NOT_ALLOWED
+from twisted.web.static import File
 
 
-class NoListingFile(twisted.web.static.File):
+class NoListingFile(File):
     """
     Serve files, but disallow directory listing.
     """
 
     def directoryListing(self):
-        raise twisted.web.error.Error(405, "Not allowed")
+        raise Error(NOT_ALLOWED, b"Not allowed")

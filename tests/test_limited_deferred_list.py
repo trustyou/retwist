@@ -2,8 +2,8 @@ import collections
 import random
 
 import pytest
-import twisted.internet.defer
-import twisted.internet.reactor
+from twisted.internet.defer import Deferred
+from twisted.internet import reactor
 
 from retwist.util.limited_deferred_list import LimitedDeferredList
 
@@ -26,7 +26,7 @@ def test_limited_deferred_list():
         """
         def deferred_factory():
             counter["running"] += 1
-            deferred = twisted.internet.defer.Deferred()
+            deferred = Deferred()
 
             def resolve_deferred():
                 # Check that, at no point, there are more than max_concurrent Deferreds running
@@ -36,7 +36,7 @@ def test_limited_deferred_list():
 
             # Wait between 0 and 10ms before resolving. Do this to ensure Deferreds are run in shuffled order
             delay = random.random() * 0.01
-            twisted.internet.reactor.callLater(delay, resolve_deferred)
+            reactor.callLater(delay, resolve_deferred)
 
             return deferred
         return deferred_factory
@@ -57,7 +57,7 @@ def test_synchronous_deferreds():
     """
 
     def deferred_factory():
-        deferred = twisted.internet.defer.Deferred()
+        deferred = Deferred()
         deferred.callback("done")
         return deferred
 
@@ -77,7 +77,7 @@ def test_error_handling():
     counter = collections.Counter()
 
     def deferred_factory():
-        deferred = twisted.internet.defer.Deferred()
+        deferred = Deferred()
         deferred.errback(RuntimeError("The Internet is broken"))
         return deferred
 
