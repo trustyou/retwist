@@ -1,9 +1,6 @@
 import codecs
 import json
-import logging
 import re
-import sys
-import traceback as _traceback
 from typing import Any, Callable, Dict, IO, Optional, Union
 
 try:
@@ -16,6 +13,7 @@ except ImportError:
 
 from twisted.internet.defer import CancelledError, Deferred, ensureDeferred, maybeDeferred
 from twisted.internet.error import ConnectError, ConnectionDone, ConnectionLost
+from twisted.python import log
 from twisted.python.failure import Failure
 from twisted.web.error import Error
 from twisted.web.resource import Resource
@@ -65,7 +63,7 @@ class JsonResource(ParamResource):
         try:
             request.url_args = self.parse_args(request)
         except Exception as ex:
-            self.handle_exception(ex, request)
+            self.handle_exception(request)
             return NOT_DONE_YET
         else:
             return Resource.render(self, request)
@@ -133,42 +131,24 @@ class JsonResource(ParamResource):
 
         request.finish()
 
-    def log_server_error(self, exception, request, traceback):
-        # type: (Exception, Request, Any) -> None
+    def handle_exception(self, request):
+        # type: (Request) -> None
         """
-        Oh no, a server error happened! Log it. The request is just passed for inspection; don't modify it.
-        :param exception: Exception instance
+        Handle the most recent exception.
         :param request: Twisted request
-        :param traceback: Traceback object
         """
-        error_msg = str(exception)
-        tb = traceback or getattr(sys, "last_traceback")
-        if tb:
-            tb_list = _traceback.extract_tb(tb)
-            tb_formatted = _traceback.format_list(tb_list)
-            tb_str = "".join(tb_formatted)
-        else:
-            tb_str = ""
-        logging.error("%s (%s) @ %s\n%s", type(exception).__name__, error_msg, request.uri, tb_str)
+        self.handle_failure(Failure(), request)
 
     def handle_failure(self, failure, request):
         # type: (Failure, Request) -> None
         """
-        Convenience errback to handle failures in Twisted deferreds.
-        :param failure: Twisted failure
+        Handle a failure. For connection errors, we do nothing - no chance to send anything. For client errors, we show
+        an informative error message. For server errors, we show a generic message, and log the error.
+        :param failure: Failure instance
         :param request: Twisted request
         """
-        self.handle_exception(failure.value, request, failure.getTracebackObject())
+        exception = failure.value  # type: Exception
 
-    def handle_exception(self, exception, request, traceback=None):
-        # type: (Exception, Request, Any) -> None
-        """
-        Send an error to the client. For connection errors, we do nothing - no chance to send anything. For client
-        errors, we show an informative error message. For server errors, we show a generic message, and log the error.
-        :param exception: Exception instance
-        :param request: Twisted request
-        :param traceback: Traceback object - needs to be passed in from Twisted Failures
-        """
         # Connection errors. This is business as usual on the Internet. We do nothing - we can't reach the client to
         # tell them about it anyways, and it's not worth logging.
         if any(isinstance(exception, exc_type) for exc_type in {
@@ -187,7 +167,10 @@ class JsonResource(ParamResource):
 
         # Server error - we don't let the client see any part of the exception, since it might expose internals. But we
         # totally need to log it.
-        self.log_server_error(exception, request, traceback)
+        error_msg = str(exception)
+        context = "{} @ {} ({})".format(type(exception).__name__, request.uri.decode(), error_msg)
+        log.err(exception, context)
+
         self.send_error(INTERNAL_SERVER_ERROR, "Server-side error", request)
 
     def send_error(self, status_code, message, request):

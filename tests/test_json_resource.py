@@ -2,6 +2,9 @@ import json
 
 import pytest
 from twisted.internet import reactor, defer, task
+from twisted.python import log
+from twisted.python.failure import Failure
+from twisted.web.server import NOT_DONE_YET
 
 import retwist
 from tests.common import _render, MyDummyRequest
@@ -54,7 +57,6 @@ def test_param_error():
     response_str = b"".join(request.written)
     # Check that the error is valid JSON, that's all we want
     json.loads(response_str.decode())
-
 
 
 @pytest.inlineCallbacks
@@ -116,19 +118,32 @@ def test_async_json_resource():
     assert response == "All working"
 
 
-class BrokenPage(retwist.JsonResource):
+# Errors can either happen synchronously, i.e. there is a current exception object in sys.exc_info. Or asynchronously,
+# i.e. an errback gets called with a Failure. Let's test both possible code paths:
 
-    def __init__(self, *args, **kwargs):
-        retwist.JsonResource.__init__(self, *args, **kwargs)
+
+class SyncBrokenPage(retwist.JsonResource):
+
+    def __init__(self):
+        retwist.JsonResource.__init__(self)
+        self.failed = False
+
+    def json_GET(self, request):
+        None / 0.0
+        request.write(b"Successfully divided by zero!")
+        return NOT_DONE_YET
+
+
+class AsyncBrokenPage(retwist.JsonResource):
+
+    def __init__(self):
+        retwist.JsonResource.__init__(self)
         self.failed = False
 
     @defer.inlineCallbacks
     def json_GET(self, request):
         _ = yield task.deferLater(reactor, 0.001, lambda: None / 0.0)
         defer.returnValue("Successfully divided by zero!")
-
-    def log_server_error(self, exception, request, traceback):
-        self.failed = True
 
 
 @pytest.inlineCallbacks
@@ -137,11 +152,23 @@ def test_error_handling():
     Check that exceptions in json_GET result in a 500 response code.
     """
 
-    request = MyDummyRequest([b"/"])
+    def err_observer(event):
+        # type: (dict) -> None
+        assert event["isError"]
+        failure = event["failure"]
+        assert isinstance(failure, Failure)
+        exception = failure.value
+        assert isinstance(exception, TypeError)
+        err_observer.called = True
 
-    resource = BrokenPage()
+    log.addObserver(err_observer)
 
-    yield _render(resource, request)
+    for resource in [SyncBrokenPage(), AsyncBrokenPage()]:
+        request = MyDummyRequest([b"/"])
+        err_observer.called = False
+        yield _render(resource, request)
 
-    assert request.responseCode == 500
-    assert resource.failed is True
+        assert request.responseCode == 500
+        assert err_observer.called is True, "Error handler not called for {}".format(type(resource).__name__)
+
+    log.removeObserver(err_observer)

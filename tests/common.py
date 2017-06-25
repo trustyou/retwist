@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Union
 
 from twisted.internet.defer import succeed
 from twisted.web.http import Request
@@ -22,7 +22,7 @@ class MyDummyRequest(DummyRequest):
 
 
 def _render(resource, request):
-    # type: (Resource, Request) -> Any
+    # type: (Resource, Union[DummyRequest, Request]) -> Any
     """
     Simulate rendering of a Twisted resource.
     :param resource: Twisted Resource with render() method.
