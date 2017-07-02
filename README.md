@@ -34,3 +34,16 @@ a route "/echo".
     twisted.internet.reactor.run()
             
 See also [examples folder](retwist/examples).
+
+## Sentry error reporting
+
+Install retwist with the `[sentry]` extra, and enable Sentry reporting like so:
+
+    from raven import Client
+    client = Client(your_sentry_dsn)
+
+    from retwist.util.sentry import enable_sentry_reporting
+    enable_sentry_reporting(client)
+
+This will capture any errors logged to [Twisted's logging system](http://twistedmatrix.com/documents/current/core/howto/logging.html)
+ and forward exceptions to Sentry.

@@ -13,5 +13,8 @@ setuptools.setup(
     install_requires=[
         "twisted",
         "typing;python_version<'3.5'"
-    ]
+    ],
+    extras_require={
+        "sentry": ["raven"]
+    }
 )
