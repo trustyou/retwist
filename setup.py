@@ -9,6 +9,7 @@ setuptools.setup(
     author="TrustYou",
     author_email="development@trustyou.com",
     version=version,
+    download_url="https://github.com/trustyou/retwist/archive/{}.tar.gz".format(version),
     url="https://github.com/trustyou/retwist",
     install_requires=[
         "twisted",

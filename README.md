@@ -14,36 +14,42 @@ You implement JSON endpoints by subclassing `retwist.JsonResource`, and implemen
 
 Here's a simple demo page that parses a required ID parameter, and echoes it back in a JSON object. Note how we register
 a route "/echo". 
-    
-    class DemoPage(retwist.JsonResource):
-    
-        isLeaf = True
-    
-        id = retwist.Param(required=True)
-    
-        def json_GET(self, request):
-            # This method can also return a Deferred
-            args = request.url_args
-            return {
-                "msg": "You passed ID {}".format(args["id"])
-            }
-            
-    site = retwist.RouteSite()
-    site.addRoute(r"/echo", EchoPage())
-    twisted.internet.reactor.listenTCP(8080, site)
-    twisted.internet.reactor.run()
-            
+
+```python
+import retwist, twisted.internet.reactor
+
+class DemoPage(retwist.JsonResource):
+
+    isLeaf = True
+
+    id = retwist.Param(required=True)
+
+    def json_GET(self, request):
+        # This method can also return a Deferred
+        args = request.url_args
+        return {
+            "msg": "You passed ID {}".format(args["id"])
+        }
+
+site = retwist.RouteSite()
+site.addRoute(r"/echo", DemoPage())
+twisted.internet.reactor.listenTCP(8080, site)
+twisted.internet.reactor.run()
+```
+
 See also [examples folder](retwist/examples).
 
 ## Sentry error reporting
 
 Install retwist with the `[sentry]` extra, and enable Sentry reporting like so:
 
-    from raven import Client
-    client = Client(your_sentry_dsn)
+```python
+from raven import Client
+client = Client("your_sentry_dsn")
 
-    from retwist.util.sentry import enable_sentry_reporting
-    enable_sentry_reporting(client)
+from retwist.util.sentry import enable_sentry_reporting
+enable_sentry_reporting(client)
+```
 
 This will capture any errors logged to [Twisted's logging system](http://twistedmatrix.com/documents/current/core/howto/logging.html)
  and forward exceptions to Sentry.

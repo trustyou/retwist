@@ -74,4 +74,3 @@ def wait_on_shutdown(reactor, site, port, timeout):
 
     site.requestFactory = request_factory
     reactor.addSystemEventTrigger("before", "shutdown", shutdown)
-
