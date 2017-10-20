@@ -95,7 +95,7 @@ class IntParam(Param):
         if self.min_val is not None and val_int < self.min_val:
             raise Error(BAD_REQUEST, b"Minimum value %d" % self.min_val)
         if self.max_val is not None and val_int > self.max_val:
-            raise Error(BAD_REQUEST, b"Minimum value %d" % self.max_val)
+            raise Error(BAD_REQUEST, b"Maximum value %d" % self.max_val)
         return val_int
 
 
