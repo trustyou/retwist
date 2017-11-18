@@ -1,4 +1,3 @@
-import codecs
 import json
 import re
 from typing import Any, Callable, Dict, IO, Optional, Union
@@ -29,9 +28,6 @@ class JsonResource(ParamResource):
     """
 
     encoding = "utf-8"
-    # Factory function for a UTF-8 stream encoder:
-    create_writer = codecs.getwriter(encoding)  # type: Callable[[Any], IO]
-
     jsonp_callback_re = re.compile(b"^[_a-zA-Z0-9\.$]+$")
 
     @classmethod
@@ -123,8 +119,10 @@ class JsonResource(ParamResource):
             request.setResponseCode(status_code)
 
         response = self.response_envelope(response, status_code=status_code, status_message=status_message)
-        stream = JsonResource.create_writer(request)
-        json.dump(response, stream, allow_nan=False, default=self.json_dump_default)
+        response_str = json.dumps(response, allow_nan=False, ensure_ascii=False, check_circular=False,
+                                  default=self.json_dump_default)
+        response_bytes = response_str.encode(self.encoding)
+        request.write(response_bytes)
 
         if is_jsonp:
             request.write(b")")
