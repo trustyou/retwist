@@ -10,7 +10,7 @@ class RouteSite(Site):
     """
     Twisted site which allows looking up resources by routes. Routes are regular expressions which match the entire
     request path, e.g. "/hotels/1234/info".
-    
+
     Routes can have placeholders in them, which are stored as arguments in request.path_args before your render_* sees
     it.
     """
@@ -20,7 +20,7 @@ class RouteSite(Site):
         """
         :param resource: Root resource for Twisted's standard Site implementation. Pass a resource if you want to fall
         back to Twisted's default resource lookup mechanism in case no route matches. If None is passed, defaults to a
-        NoResource() instance. 
+        NoResource() instance.
         """
         resource = resource or NoResource()
         Site.__init__(self, resource, *args, **kwargs)

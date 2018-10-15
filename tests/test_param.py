@@ -15,8 +15,8 @@ def dummy_request():
     request.args = {
         b"id": [b"1234"],
         b"count": [b"20"],
-        b"parent_id": [], # happens when you pass "parent_id="
-        b"child_id": [b"a", b"b"], # happens when you pass "child_id=a&child_id=b". Not supported by retwist
+        b"parent_id": [],  # happens when you pass "parent_id="
+        b"child_id": [b"a", b"b"],  # happens when you pass "child_id=a&child_id=b". Not supported by retwist
         b"debug": [b"true"],
         b"verbose": [b"false"],
         b"type": [b"int"],
@@ -28,7 +28,7 @@ def dummy_request():
 
 def test_param(dummy_request):
     """
-    Test basic parsing behavior. 
+    Test basic parsing behavior.
     """
 
     param = Param()

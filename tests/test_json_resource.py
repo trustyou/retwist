@@ -96,7 +96,7 @@ class AsyncPage(retwist.JsonResource):
 
     @defer.inlineCallbacks
     def json_GET(self, request):
-        _ = yield task.deferLater(reactor, 0.001, lambda: None)
+        yield task.deferLater(reactor, 0.001, lambda: None)
         defer.returnValue("All working")
 
 
@@ -142,7 +142,7 @@ class AsyncBrokenPage(retwist.JsonResource):
 
     @defer.inlineCallbacks
     def json_GET(self, request):
-        _ = yield task.deferLater(reactor, 0.001, lambda: None / 0.0)
+        yield task.deferLater(reactor, 0.001, lambda: None / 0.0)
         defer.returnValue("Successfully divided by zero!")
 
 

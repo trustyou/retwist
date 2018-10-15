@@ -27,7 +27,7 @@ def _render(resource, request):
     Simulate rendering of a Twisted resource.
     :param resource: Twisted Resource with render() method.
     :param request: Request (or mock object).
-    :return: Deferred 
+    :return: Deferred
     """
     result = resource.render(request)
     if isinstance(result, bytes):
