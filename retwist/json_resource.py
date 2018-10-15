@@ -58,7 +58,7 @@ class JsonResource(ParamResource):
         """
         try:
             request.url_args = self.parse_args(request)
-        except Exception as ex:
+        except Exception:
             self.handle_exception(request)
             return NOT_DONE_YET
         else:
@@ -68,7 +68,7 @@ class JsonResource(ParamResource):
         # type: (Request) -> int
         """
         Get JSON data from json_GET, and render for the client.
-        
+
         Do not override in sub classes ...
         :param request: Twisted request
         """
@@ -90,7 +90,7 @@ class JsonResource(ParamResource):
         # type: (Any, int, Optional[str]) -> Any
         """
         Implement this to transform JSON responses before sending, e.g. by putting HTTP status codes in the response.
-        :param response: JSON data about to be sent to client 
+        :param response: JSON data about to be sent to client
         :param status_code: HTTP status code
         :param status_message: Optional status message, e.g. error message
         :return: Wrapped JSON-serializable data
@@ -101,7 +101,7 @@ class JsonResource(ParamResource):
         # type: (Any, Request, int, Optional[str]) -> None
         """
         Send JSON data to client.
-        :param response: JSON-serializable data 
+        :param response: JSON-serializable data
         :param request: Twisted request
         :param status_code: HTTP status code
         :param status_message: Optional status message, e.g. error message
@@ -185,7 +185,7 @@ class JsonResource(ParamResource):
         # type: (Failure, Deferred) -> None
         """
         Handle connection errors.
-        :param failure: Twisted failure 
+        :param failure: Twisted failure
         :param deferred: The async call to json_GET
         """
         deferred.cancel()

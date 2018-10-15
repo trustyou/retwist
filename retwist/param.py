@@ -7,14 +7,14 @@ from twisted.web.http import Request, BAD_REQUEST
 
 class Param(object):
     """
-    Base class for retwist Parameters. Subclass and override parse() to implement custom parsing behavior. 
+    Base class for retwist Parameters. Subclass and override parse() to implement custom parsing behavior.
     """
 
     def __init__(self, required=False, default=None):
         # type: (bool, Any) -> None
         """
         :param required: Throw 400 error if parameter is missing
-        :param default: Default value, in case parameter missing 
+        :param default: Default value, in case parameter missing
         """
         if required and default:
             raise ValueError("Required parameters can't have a default")
@@ -107,7 +107,7 @@ class EnumParam(Param):
     def __init__(self, enum, *args, **kwargs):
         # type: (Iterable[str], *Any, **Any) -> None
         """
-        :param enum: List/tuple of allowed values, e.g. ("enabled", "disabled") 
+        :param enum: List/tuple of allowed values, e.g. ("enabled", "disabled")
         """
         super(EnumParam, self).__init__(*args, **kwargs)
         self.enum = frozenset(enum)
@@ -146,7 +146,7 @@ class LangParam(Param):
             (
                 (match.group(1), match.group(2) or "1")
                 for match in cls.accept_language_re.finditer(accept_language_str)
-                if match.group(1) != "*" # ignore wildcard language
+                if match.group(1) != "*"  # ignore wildcard language
             ),
             key=lambda lang_weight: float(lang_weight[1]), reverse=True
         )
