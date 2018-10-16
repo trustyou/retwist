@@ -12,7 +12,7 @@ setuptools.setup(
     download_url="https://github.com/trustyou/retwist/archive/v{}.tar.gz".format(version),
     url="https://github.com/trustyou/retwist",
     install_requires=[
-        "twisted",
+        "twisted==18.9.0",
         "typing;python_version<'3.5'"
     ],
     extras_require={
