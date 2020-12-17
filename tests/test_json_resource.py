@@ -1,6 +1,6 @@
 import json
 
-import pytest
+import pytest_twisted
 from twisted.internet import reactor, defer, task
 from twisted.python import log
 from twisted.python.failure import Failure
@@ -19,7 +19,7 @@ class EchoArgsPage(retwist.JsonResource):
         return request.url_args
 
 
-@pytest.inlineCallbacks
+@pytest_twisted.inlineCallbacks
 def test_json_resource():
     """
     Test regular synchronous JSON rendering.
@@ -42,7 +42,7 @@ def test_json_resource():
     }
 
 
-@pytest.inlineCallbacks
+@pytest_twisted.inlineCallbacks
 def test_param_error():
     """
     Test that errors during parsing parameters return a correct error document.
@@ -59,7 +59,7 @@ def test_param_error():
     json.loads(response_str.decode())
 
 
-@pytest.inlineCallbacks
+@pytest_twisted.inlineCallbacks
 def test_jsonp():
 
     # Check that response is wrapped in callback
@@ -100,7 +100,7 @@ class AsyncPage(retwist.JsonResource):
         defer.returnValue("All working")
 
 
-@pytest.inlineCallbacks
+@pytest_twisted.inlineCallbacks
 def test_async_json_resource():
     """
     Make sure that asynchronous json_GET methods are supported.
@@ -146,7 +146,7 @@ class AsyncBrokenPage(retwist.JsonResource):
         defer.returnValue("Successfully divided by zero!")
 
 
-@pytest.inlineCallbacks
+@pytest_twisted.inlineCallbacks
 def test_error_handling():
     """
     Check that exceptions in json_GET result in a 500 response code.
