@@ -28,7 +28,7 @@ class JsonResource(ParamResource):
     """
 
     encoding = "utf-8"
-    jsonp_callback_re = re.compile(b"^[_a-zA-Z0-9\.$]+$")
+    jsonp_callback_re = re.compile(br"^[_a-zA-Z0-9\.$]+$")
 
     @classmethod
     def json_dump_default(cls, o):

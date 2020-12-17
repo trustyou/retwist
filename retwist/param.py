@@ -126,7 +126,7 @@ class LangParam(Param):
     Parse language from "lang" URL parameter, or infer from Accept-Language HTTP header.
     """
 
-    accept_language_re = re.compile("([a-z]{1,8}(?:-[a-z]{1,8})?)\s*(?:;\s*q\s*=\s*(1|0\.[0-9]+))?", re.IGNORECASE)
+    accept_language_re = re.compile(r"([a-z]{1,8}(?:-[a-z]{1,8})?)\s*(?:;\s*q\s*=\s*(1|0\.[0-9]+))?", re.IGNORECASE)
 
     def parse_from_request(self, name, request):
         # type: (str, Request) -> str
