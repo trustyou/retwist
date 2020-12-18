@@ -1,4 +1,4 @@
-import pytest
+import pytest_twisted
 from twisted.web.resource import NoResource, Resource
 
 import retwist
@@ -19,7 +19,7 @@ class RestaurantPage(Resource):
         return hotel_id.encode()
 
 
-@pytest.inlineCallbacks
+@pytest_twisted.inlineCallbacks
 def test_route_site():
 
     root = Resource()

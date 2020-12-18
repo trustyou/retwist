@@ -1,14 +1,14 @@
 import collections
 import random
 
-import pytest
+import pytest_twisted
 from twisted.internet.defer import Deferred
 from twisted.internet import reactor
 
 from retwist.util.limited_deferred_list import LimitedDeferredList
 
 
-@pytest.inlineCallbacks
+@pytest_twisted.inlineCallbacks
 def test_limited_deferred_list():
     """
     Test that no more than max_concurrent Deferreds are run at the same time, and that results are returned in correct
@@ -50,7 +50,7 @@ def test_limited_deferred_list():
     assert expected_results == results
 
 
-@pytest.inlineCallbacks
+@pytest_twisted.inlineCallbacks
 def test_synchronous_deferreds():
     """
     Test that deferreds that callback synchronously don't mess up our control flow.
@@ -71,7 +71,7 @@ def test_synchronous_deferreds():
     assert ["done", "done"] == results
 
 
-@pytest.inlineCallbacks
+@pytest_twisted.inlineCallbacks
 def test_error_handling():
 
     counter = collections.Counter()
