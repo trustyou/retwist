@@ -26,7 +26,7 @@ setuptools.setup(
         'Programming Language :: Python :: 3.8',
     ],
     extras_require={
-        "sentry": ["raven"],
+        "sentry": ["sentry-sdk"],
         "jsonschema": [
             "jsonschema",
             # pyrsistent is a dependency of jsonschema, pinned to the latest Python 2-compatible version

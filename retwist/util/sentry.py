@@ -1,8 +1,6 @@
-from raven import Client
+import sentry_sdk
+from twisted.python.failure import Failure
 from twisted.python import log
-
-
-raven_client = None  # type: Client
 
 
 def log_to_sentry(event):
@@ -14,16 +12,15 @@ def log_to_sentry(event):
     if not event.get("isError") or "failure" not in event:
         return
 
-    f = event["failure"]
-    raven_client.captureException((f.type, f.value, f.getTracebackObject()))
+    f = event["failure"]  # type: Failure
+    sentry_sdk.capture_exception(f.value)
 
 
-def enable_sentry_reporting(client):
-    # type: (Client) -> None
+def enable_sentry_reporting():
+    # type: () -> None
     """
     Enable Sentry logging for any errors reported via twisted.python.log.err.
-    :param client: Already configured raven.Client
+
+    Call sentry_sdk.init() before this.
     """
-    global raven_client
-    raven_client = client
     log.addObserver(log_to_sentry)
