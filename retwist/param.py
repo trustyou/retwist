@@ -21,17 +21,19 @@ class Param(object):
     Base class for retwist Parameters. Subclass and override parse() to implement custom parsing behavior.
     """
 
-    def __init__(self, required=False, default=None):
-        # type: (bool, Any) -> None
+    def __init__(self, required=False, default=None, name=None):
+        # type: (bool, Any, Optional[str]) -> None
         """
         :param required: Throw 400 error if parameter is missing
         :param default: Default value, in case parameter missing
+        :param name: Parameter name in the URL. Use this parameter if your parameter name is a reserved Python keyword
         """
         if required and default:
             raise ValueError("Required parameters can't have a default")
 
         self.required = required
         self.default = default
+        self.name = name
 
     def parse_from_request(self, name, request):
         # type: (str, Request) -> Any

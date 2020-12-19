@@ -29,6 +29,11 @@ class ParamResource(Resource):
         """
         args = {}
         for name, param in inspect.getmembers(self, lambda member: isinstance(member, retwist.Param)):
+
+            # Name can be overridden. This is useful if parameter name is a Python reserved keyword
+            if param.name is not None:
+                name = param.name
+
             try:
                 val = param.parse_from_request(name, request)
             except Error as ex:
