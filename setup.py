@@ -12,8 +12,8 @@ setuptools.setup(
     download_url="https://github.com/trustyou/retwist/archive/v{}.tar.gz".format(version),
     url="https://github.com/trustyou/retwist",
     install_requires=[
-        "twisted>'16.4'",
-        "typing;python_version<'3.5'"
+        "twisted>16.4",
+        "typing;python_version<'3.5'",
     ],
     classifiers=[
         'Development Status :: 5 - Production/Stable',

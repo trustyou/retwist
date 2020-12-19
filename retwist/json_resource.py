@@ -6,8 +6,7 @@ try:
     from inspect import iscoroutinefunction
 except ImportError:
     # We must be on Python < 3.5!
-    def iscoroutinefunction(func):
-        # type: (Callable) -> bool
+    def iscoroutinefunction(func):  # type: ignore
         return False
 
 from twisted.internet.defer import CancelledError, Deferred, ensureDeferred, maybeDeferred

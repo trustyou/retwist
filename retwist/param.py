@@ -8,11 +8,11 @@ from twisted.web.http import Request, BAD_REQUEST
 try:
     from jsonschema import Draft7Validator, ValidationError
 except ImportError:
-    class Draft7Validator:
+    class Draft7Validator:  # type: ignore
         def __call__(self, *args, **kwargs):
             raise not NotImplementedError("Install with jsonschema extra to enable validating JSON parameters")
 
-    class ValidationError(Exception):
+    class ValidationError(Exception):  # type: ignore
         pass
 
 
@@ -165,15 +165,16 @@ class LangParam(Param):
     def infer_lang(self, request):
         # type: (Request) -> str
         http_header = request.getHeader("Accept-Language")
+        default_lang = str(self.default)  # type: str
         if http_header:
             try:
                 locales = self.parse_accept_language(http_header)
             except (TypeError, ValueError):
-                return self.default
+                return default_lang
             else:
                 if locales:
                     return locales[0][0]
-        return self.default
+        return default_lang
 
 
 class VersionParam(Param):
