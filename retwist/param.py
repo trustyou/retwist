@@ -1,8 +1,19 @@
+import json
 import re
-from typing import Any, Iterable, List, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 
 from twisted.web.error import Error
 from twisted.web.http import Request, BAD_REQUEST
+
+try:
+    from jsonschema import Draft7Validator, ValidationError
+except ImportError:
+    class Draft7Validator:
+        def __call__(self, *args, **kwargs):
+            raise not NotImplementedError("Install with jsonschema extra to enable validating JSON parameters")
+
+    class ValidationError(Exception):
+        pass
 
 
 class Param(object):
@@ -179,3 +190,61 @@ class VersionParam(Param):
             return tuple(map(int, val_str.split(".")))
         except (TypeError, ValueError):
             raise Error(BAD_REQUEST, b"Invalid version literal")
+
+
+class JsonParam(Param):
+    """
+    Parse a parameter encoded as JSON. You can optionally verify its data format by passing a https://json-schema.org/
+    """
+
+    JSON_OBJECT_TYPE = Dict[str, Any]
+    JSON_TYPE = Union[None, bool, int, str, list, JSON_OBJECT_TYPE]
+
+    NUMBER_TYPE = {"type": "number"}
+    STRING_TYPE = {"type": "string"}
+    UUID_TYPE = {"type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"}
+    ARRAY_TYPE = {"type": "array"}  # type: JSON_OBJECT_TYPE
+
+    def __init__(self, schema=None, *args, **kwargs):
+        # type: (Any, *Any, **Any) -> None
+        """
+        :param schema: JSON schema (draft 7 compatible), or None if format shouldn't be checked
+        """
+        super(JsonParam, self).__init__(*args, **kwargs)
+        if schema is None:
+            self.validator = None
+        else:
+            Draft7Validator.check_schema(schema)
+            self.validator = Draft7Validator(schema)
+
+    def parse(self, val):
+        # type: (bytes) -> JsonParam.JSON_TYPE
+        val_str = val.decode()
+        try:
+            data = json.loads(val_str)
+            if self.validator is not None:
+                self.validator.validate(data)
+        except (ValueError, ValidationError) as ex:
+            error_message = str(ex).encode("utf-8")
+            raise Error(BAD_REQUEST, b"Invalid JSON: %s" % error_message)
+        else:
+            return data
+
+    @classmethod
+    def array(cls, items=None, min_items=None, max_items=None):
+        # type: (Optional[Dict[str, Any]], Optional[int], Optional[int]) -> JsonParam
+        """
+        Parse a parameter encoded as a JSON array.
+
+        :param items: Schema to apply for array items (optional)
+        :param min_items: Minimum number of items (optional)
+        :param max_items: Maximum number of items (optional)
+        """
+        schema = cls.ARRAY_TYPE
+        if items is not None:
+            schema["items"] = items
+        if min_items is not None:
+            schema["minItems"] = min_items
+        if max_items is not None:
+            schema["maxItems"] = max_items
+        return cls(schema)

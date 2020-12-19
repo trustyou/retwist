@@ -2,7 +2,7 @@ import pytest
 from twisted.web.error import Error
 from twisted.web.test.requesthelper import DummyRequest
 
-from retwist.param import BoolParam, EnumParam, IntParam, LangParam, Param, VersionParam
+from retwist.param import BoolParam, EnumParam, IntParam, JsonParam, LangParam, Param, VersionParam
 
 
 @pytest.fixture
@@ -170,4 +170,66 @@ def test_version_param(dummy_request):
 
     with pytest.raises(Error) as exc_info:
         version_param.parse_from_request("v", dummy_request)
+    assert exc_info.value.status == b"400"
+
+
+def test_json_param(dummy_request):
+
+    json_param = JsonParam()
+
+    val = json_param.parse_from_request("count", dummy_request)
+    assert val == 20
+
+    with pytest.raises(Error) as exc_info:
+        json_param.parse(b'invalid: "json"')
+    assert exc_info.value.status == b"400"
+
+
+def test_json_param_with_schema():
+    json_exceptions = pytest.importorskip("jsonschema.exceptions")
+
+    schema = {
+        "type": "object",
+        "properties": {
+            "x": {"type": "number"}
+        },
+        "additionalProperties": False
+    }
+    json_param = JsonParam(schema=schema)
+
+    val = json_param.parse(b'{"x": 1337}')
+    assert val == {"x": 1337}
+
+    with pytest.raises(Error) as exc_info:
+        json_param.parse(b'{"x": 1337, "y": "foo"}')
+    assert exc_info.value.status == b"400"
+
+    # Test that invalid schema gets rejected
+
+    with pytest.raises(json_exceptions.SchemaError):
+        JsonParam(schema={"type": "shmerg"})
+
+
+def test_json_param_array():
+    pytest.importorskip("jsonschema")
+
+    json_param = JsonParam.array(items={"type": "number"}, max_items=1)
+
+    val = json_param.parse(b'[1337]')
+    assert val == [1337]
+
+    with pytest.raises(Error) as exc_info:
+        json_param.parse(b'["invalid"]')
+    assert exc_info.value.status == b"400"
+
+    with pytest.raises(Error) as exc_info:
+        json_param.parse(b'[1337, 31337]')
+    assert exc_info.value.status == b"400"
+
+    uuid_param = JsonParam.array(items=JsonParam.UUID_TYPE)
+    val = uuid_param.parse(b'["d46cb4aa-4e50-4a54-907c-a6db7ac9d646"]')
+    assert val == ["d46cb4aa-4e50-4a54-907c-a6db7ac9d646"]
+
+    with pytest.raises(Error) as exc_info:
+        json_param.parse(b'["abcdef-invalid-uuid"]')
     assert exc_info.value.status == b"400"
