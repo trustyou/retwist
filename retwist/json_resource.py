@@ -166,7 +166,7 @@ class JsonResource(ParamResource):
         # totally need to log it.
         error_msg = str(exception)
         context = "{} @ {} ({})".format(type(exception).__name__, request.uri.decode(), error_msg)
-        log.err(exception, context)
+        log.err(exception, context, request=request)
 
         self.send_error(INTERNAL_SERVER_ERROR, "Server-side error", request)
 
