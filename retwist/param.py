@@ -46,12 +46,12 @@ class Param(object):
             if self.default is not None:
                 return self.default
             if self.required:
-                raise Error(BAD_REQUEST, message=b"%s is required" % name_bytes)
+                raise Error(BAD_REQUEST, message=b"Required")
             else:
                 return None
 
         if len(request.args[name_bytes]) != 1:
-            raise Error(BAD_REQUEST, message=b"Pass exactly one argument for %s" % name_bytes)
+            raise Error(BAD_REQUEST, message=b"Pass exactly one argument")
 
         val = request.args[name_bytes][0]
         return self.parse(val)

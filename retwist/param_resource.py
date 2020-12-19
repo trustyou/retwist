@@ -1,6 +1,7 @@
 import inspect
 from typing import Any, Dict
 
+from twisted.web.error import Error
 from twisted.web.http import Request
 from twisted.web.resource import Resource
 
@@ -26,8 +27,13 @@ class ParamResource(Resource):
         :param request: Twisted request
         :return: Dictionary of parameter names to parsed values
         """
-        return {
-            name: param.parse_from_request(name, request)
-            for name, param in inspect.getmembers(self)
-            if isinstance(param, retwist.Param)
-        }
+        args = {}
+        for name, param in inspect.getmembers(self, lambda member: isinstance(member, retwist.Param)):
+            try:
+                val = param.parse_from_request(name, request)
+            except Error as ex:
+                error_msg = "Error in parameter {}: {}".format(name, ex.message).encode("utf-8")
+                raise Error(ex.status, error_msg)
+            else:
+                args[name] = val
+        return args
