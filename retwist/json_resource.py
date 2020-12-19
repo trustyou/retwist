@@ -1,6 +1,6 @@
 import json
 import re
-from typing import Any, Callable, Dict, IO, Optional, Union
+from typing import Any, Dict, Optional, Union
 
 try:
     from inspect import iscoroutinefunction
