@@ -178,7 +178,7 @@ class JsonResource(ParamResource):
         :param message: Error message that we want to expose to the client
         :param request: Twisted request
         """
-        self.send_json_response(message, request, status_code=status_code)
+        self.send_json_response(None, request, status_code=status_code, status_message=message)
 
     def on_connection_closed(self, failure, deferred):
         # type: (Failure, Deferred) -> None
