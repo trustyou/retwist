@@ -1,5 +1,6 @@
 import json
 import re
+from logging import getLogger
 from typing import Any, Dict, Optional, Union
 
 try:
@@ -19,6 +20,8 @@ from twisted.web.http import Request, BAD_REQUEST, INTERNAL_SERVER_ERROR
 from twisted.web.server import NOT_DONE_YET
 
 from retwist.param_resource import ParamResource
+
+logger = getLogger(__name__)
 
 
 class JsonResource(ParamResource):
@@ -162,13 +165,25 @@ class JsonResource(ParamResource):
                 self.send_error(status_code, message, request)
                 return
 
-        # Server error - we don't let the client see any part of the exception, since it might expose internals. But we
-        # totally need to log it.
-        error_msg = str(exception)
-        context = "{} @ {} ({})".format(type(exception).__name__, request.uri.decode(), error_msg)
-        log.err(exception, context, request=request)
+        # Unhandled server error - let's log it
+        self.log_exception(exception, failure.getTraceback(), request)
 
+        # We don't let the client see any part of the exception, since it might expose internals
         self.send_error(INTERNAL_SERVER_ERROR, "Server-side error", request)
+
+    def log_exception(self, exception, traceback, request):
+        # type: (Exception, str, Request) -> None
+        """
+        A server-side error has occurred.
+        :param exception: Exception instance
+        :param traceback: Callstack, already formatted as a multi-line string
+        :param request: Twisted request, which was being handled when exception happened
+        """
+        exception_type = type(exception).__name__
+        error_msg = "{} while handling {} {}\n{}".format(exception_type, request.method, request.uri, traceback)
+
+        # Send to Twisted's logging system
+        log.err(exception, error_msg, request=request)
 
     def send_error(self, status_code, message, request):
         # type: (int, str, Request) -> None
