@@ -1,8 +1,10 @@
+from uuid import UUID
+
 import pytest
 from twisted.web.error import Error
 from twisted.web.test.requesthelper import DummyRequest
 
-from retwist.param import BoolParam, EnumParam, IntParam, JsonParam, LangParam, Param, VersionParam
+from retwist.param import BoolParam, EnumParam, IntParam, JsonParam, LangParam, Param, UUIDParam, VersionParam
 
 
 @pytest.fixture
@@ -21,7 +23,8 @@ def dummy_request():
         b"verbose": [b"false"],
         b"type": [b"int"],
         b"lang": [b"de"],
-        b"v": [b"1.0"]
+        b"v": [b"1.0"],
+        b"key": [b"523f2850-5646-4832-9507-e99e144328c8"],
     }
     return request
 
@@ -232,4 +235,15 @@ def test_json_param_array():
 
     with pytest.raises(Error) as exc_info:
         json_param.parse(b'["abcdef-invalid-uuid"]')
+    assert exc_info.value.status == b"400"
+
+
+def test_uuid_param(dummy_request):
+    uuid_param = UUIDParam()
+
+    val = uuid_param.parse_from_request("key", dummy_request)
+    assert val == UUID("523f2850-5646-4832-9507-e99e144328c8")
+
+    with pytest.raises(Error) as exc_info:
+        uuid_param.parse(b'["abcdef-invalid-uuid"]')
     assert exc_info.value.status == b"400"

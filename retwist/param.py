@@ -1,6 +1,7 @@
 import json
 import re
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
+from uuid import UUID
 
 from twisted.web.error import Error
 from twisted.web.http import Request, BAD_REQUEST
@@ -251,3 +252,17 @@ class JsonParam(Param):
         if max_items is not None:
             schema["maxItems"] = max_items
         return cls(schema)
+
+
+class UUIDParam(Param):
+    """
+    Parameter that verifies it's a valid UUID.
+    """
+
+    def parse(self, val):
+        # type: (bytes) -> UUID
+        val_str = val.decode()
+        try:
+            return UUID(val_str)
+        except ValueError:
+            raise Error(BAD_REQUEST, message=b"Malformed UUID")
