@@ -201,13 +201,14 @@ class JsonParam(Param):
     Parse a parameter encoded as JSON. You can optionally verify its data format by passing a https://json-schema.org/
     """
 
-    JSON_OBJECT_TYPE = Dict[str, Any]
-    JSON_TYPE = Union[None, bool, int, str, list, JSON_OBJECT_TYPE]
-
+    # Some common JSON schema types. Can be passed to `JsonParam.array(items=JsonParam.NUMBER_TYPE)`, for example.
     NUMBER_TYPE = {"type": "number"}
     STRING_TYPE = {"type": "string"}
     UUID_TYPE = {"type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"}
-    ARRAY_TYPE = {"type": "array"}  # type: JSON_OBJECT_TYPE
+
+    # For type annotations
+    _JSON_OBJECT_TYPE = Dict[str, Any]
+    _JSON_TYPE = Union[None, bool, int, str, list, _JSON_OBJECT_TYPE]
 
     def __init__(self, schema=None, *args, **kwargs):
         # type: (Any, *Any, **Any) -> None
@@ -222,21 +223,24 @@ class JsonParam(Param):
             self.validator = Draft7Validator(schema)
 
     def parse(self, val):
-        # type: (bytes) -> JsonParam.JSON_TYPE
+        # type: (bytes) -> JsonParam._JSON_TYPE
         val_str = val.decode()
         try:
             data = json.loads(val_str)
             if self.validator is not None:
                 self.validator.validate(data)
-        except (ValueError, ValidationError) as ex:
+        except ValueError as ex:
             error_message = str(ex).encode("utf-8")
             raise Error(BAD_REQUEST, b"Invalid JSON: %s" % error_message)
+        except ValidationError as ex:
+            error_message = ex.message.encode("utf-8")
+            raise Error(BAD_REQUEST, b"JSON schema error: %s" % error_message)
         else:
             return data
 
     @classmethod
-    def array(cls, items=None, min_items=None, max_items=None):
-        # type: (Optional[Dict[str, Any]], Optional[int], Optional[int]) -> JsonParam
+    def array(cls, items=None, min_items=None, max_items=None, *args, **kwargs):
+        # type: (Optional[Dict[str, Any]], Optional[int], Optional[int], *Any, **Any) -> JsonParam
         """
         Parse a parameter encoded as a JSON array.
 
@@ -244,14 +248,14 @@ class JsonParam(Param):
         :param min_items: Minimum number of items (optional)
         :param max_items: Maximum number of items (optional)
         """
-        schema = cls.ARRAY_TYPE
+        schema = {"type": "array"}  # type: JsonParam._JSON_OBJECT_TYPE
         if items is not None:
             schema["items"] = items
         if min_items is not None:
             schema["minItems"] = min_items
         if max_items is not None:
             schema["maxItems"] = max_items
-        return cls(schema)
+        return cls(schema, *args, **kwargs)
 
 
 class UUIDParam(Param):
