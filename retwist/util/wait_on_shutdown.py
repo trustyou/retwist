@@ -1,10 +1,12 @@
-import logging
+from logging import getLogger
 from typing import Any, Callable, Set, Union
 
 from twisted.internet.defer import Deferred, DeferredList
 from twisted.internet.interfaces import IListeningPort, IReactorCore
 from twisted.web.http import Request
 from twisted.web.server import Site
+
+logger = getLogger(__name__)
 
 
 def wait_on_shutdown(reactor, site, port, timeout):
@@ -45,13 +47,13 @@ def wait_on_shutdown(reactor, site, port, timeout):
         Shutdown handler for the Twisted reactor. Stop accepting incoming requests. Then, delay the shutdown of the
         reactor up to a certain timeout if there are still requests running.
         """
-        logging.info("Shutdown requested")
+        logger.info("Shutdown requested")
 
         # force shutdown after timeout
         timeout_deferred = Deferred()
 
         def kill_timeout():
-            logging.warning("Timeout reached, canceling %s requests", len(running_reqs))
+            logger.warning("Timeout reached, canceling %s requests", len(running_reqs))
             timeout_deferred.callback(True)
         reactor.callLater(timeout, kill_timeout)
 
@@ -63,10 +65,10 @@ def wait_on_shutdown(reactor, site, port, timeout):
             Call the timeout if all requests are done; otherwise wait a few more seconds.
             """
             if not running_reqs:
-                logging.info("No pending requests, shutting down!")
+                logger.info("No pending requests, shutting down!")
                 timeout_deferred.callback(True)
             else:
-                logging.info("%s requests still running, waiting ...", len(running_reqs))
+                logger.info("%s requests still running, waiting ...", len(running_reqs))
                 reactor.callLater(5, kill_if_requests_done)
         kill_if_requests_done()
 
