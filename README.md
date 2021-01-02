@@ -24,11 +24,14 @@ class DemoPage(retwist.JsonResource):
 
     id = retwist.Param(required=True)
 
+    # Use the "name" argument for parameters whose names are reserved Python keywords:
+    from_param = retwist.Param(name="from")
+
     def json_GET(self, request):
         # This method can also return a Deferred
         args = request.url_args
         return {
-            "msg": "You passed ID {}".format(args["id"])
+            "msg": "You passed ID {} and from {}".format(args["id"], args.get("from"))
         }
 
 site = retwist.RouteSite()
@@ -39,17 +42,41 @@ twisted.internet.reactor.run()
 
 See also [examples folder](retwist/examples).
 
+## JSON parameters
+
+Retwist can parse JSON-encoded parameters, and with the `[jsonschema]` extra installed, perform schema validations on
+the data.
+
+For example, this resource will parse the data passed for the "config" parameter, and return a 400 client error if it
+was invalid JSON, or did not comply with the specified schema:
+
+```python
+import retwist
+
+class JsonDemoPage(retwist.JsonResource):
+ 
+    config = retwist.JsonParam(schema={"type": "object"})
+
+    def json_GET(self, request):
+        # You can assume request.url_args["config"] to be a dictionary here
+        # ...
+```
+
 ## Sentry error reporting
 
 Install retwist with the `[sentry]` extra, and enable Sentry reporting like so:
 
 ```python
-from raven import Client
-client = Client("your_sentry_dsn")
+import sentry_sdk
+sentry_sdk.init(dsn="...", release="...")
 
 from retwist.util.sentry import enable_sentry_reporting
-enable_sentry_reporting(client)
+enable_sentry_reporting()
+
+# This is useful to redirect Twisted log messages to Python's logging module:
+from retwist.util.logs import redirect_twisted_logging
+redirect_twisted_logging()
 ```
 
 This will capture any errors logged to [Twisted's logging system](http://twistedmatrix.com/documents/current/core/howto/logging.html)
- and forward exceptions to Sentry.
+ and forward exceptions to Sentry. Starting from retwist 0.3, this reports the request URL, headers and data to Sentry.
