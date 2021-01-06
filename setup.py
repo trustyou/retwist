@@ -1,11 +1,21 @@
+import io
+import os.path
+
 import setuptools
 
 version = "0.3"
+
+this_directory = os.path.abspath(os.path.dirname(__file__))
+readme_path = os.path.join(this_directory, "README.md")
+with io.open(readme_path, encoding="utf-8") as f:
+    long_description = f.read()
 
 setuptools.setup(
     name="retwist",
     packages=setuptools.find_packages(exclude=["tests", "tests.*"]),
     description="Write JSON REST APIs in the Twisted framework",
+    long_description=long_description,
+    long_description_content_type="text/markdown",
     author="TrustYou",
     author_email="development@trustyou.com",
     version=version,
