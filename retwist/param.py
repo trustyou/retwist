@@ -7,11 +7,11 @@ from twisted.web.error import Error
 from twisted.web.http import Request, BAD_REQUEST
 
 try:
-    from jsonschema import Draft7Validator, ValidationError
+    from jsonschema import ValidationError
+    from jsonschema.validators import validator_for
 except ImportError:
-    class Draft7Validator:  # type: ignore
-        def __call__(self, *args, **kwargs):
-            raise not NotImplementedError("Install with jsonschema extra to enable validating JSON parameters")
+    def validator_for(*args, **kwargs):  # type: ignore
+        raise not NotImplementedError("Install with jsonschema extra to enable validating JSON parameters")
 
     class ValidationError(Exception):  # type: ignore
         pass
@@ -219,8 +219,9 @@ class JsonParam(Param):
         if schema is None:
             self.validator = None
         else:
-            Draft7Validator.check_schema(schema)
-            self.validator = Draft7Validator(schema)
+            validator_class = validator_for(schema)
+            validator_class.check_schema(schema)
+            self.validator = validator_class(schema)
 
     def parse(self, val):
         # type: (bytes) -> JsonParam._JSON_TYPE
