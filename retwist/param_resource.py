@@ -5,7 +5,7 @@ from twisted.web.error import Error
 from twisted.web.http import Request
 from twisted.web.resource import Resource
 
-import retwist.param
+from retwist.param import BaseParam
 
 
 class ParamResource(Resource):
@@ -28,7 +28,7 @@ class ParamResource(Resource):
         :return: Dictionary of parameter names to parsed values
         """
         args = {}
-        for name, param in inspect.getmembers(self, lambda member: isinstance(member, retwist.Param)):
+        for name, param in inspect.getmembers(self, lambda member: isinstance(member, BaseParam)):
 
             # Name can be overridden. This is useful if parameter name is a Python reserved keyword
             if param.name is not None:

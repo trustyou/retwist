@@ -9,4 +9,5 @@ class NoListingFile(File):
     """
 
     def directoryListing(self):
+        # type: () -> None
         raise Error(NOT_ALLOWED, b"Not allowed")

@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Any, Dict
 
 import sentry_sdk
 from twisted.python import log
@@ -6,7 +6,7 @@ from twisted.python.failure import Failure
 
 
 def add_request_context_to_scope(context, scope):
-    # type: (Dict, sentry_sdk.Scope) -> None
+    # type: (Dict[Any, str], sentry_sdk.Scope) -> None
     """
     Add context information which is useful for debugging from a Twisted request to a Sentry scope.
     """
@@ -17,7 +17,7 @@ def add_request_context_to_scope(context, scope):
 
 
 def log_to_sentry(event):
-    # type: (dict) -> None
+    # type: (Dict[str, Any]) -> None
     """
     Twisted log observer for reporting errors to sentry.
     :param event: Twisted log event dictionary.
@@ -31,7 +31,7 @@ def log_to_sentry(event):
 
     if "context" in event:
         # If a Twisted request has been added as context to the logged event, we can extract useful debug info
-        context = event["context"]  # type: Dict
+        context = event["context"]  # type: Dict[str, Any]
         with sentry_sdk.push_scope() as scope:
             add_request_context_to_scope(context, scope)
             sentry_sdk.capture_exception(exc_tuple)

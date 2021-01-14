@@ -1,5 +1,5 @@
 from logging import getLogger
-from typing import Any, Callable, Set, Union
+from typing import Any, Set
 
 from twisted.internet.defer import Deferred, DeferredList
 from twisted.internet.interfaces import IListeningPort, IReactorCore
@@ -23,7 +23,7 @@ def wait_on_shutdown(reactor, site, port, timeout):
     :param timeout: Timeout in seconds after which pending requests are canceled and shutdown is forced
     """
     running_reqs = set()  # type: Set[int]
-    wrapped_request_factory = site.requestFactory  # type: Union[Callable, type]
+    wrapped_request_factory = site.requestFactory
 
     def request_factory(*args, **kwargs):
         # type: (*Any, **Any) -> Request
@@ -31,6 +31,7 @@ def wait_on_shutdown(reactor, site, port, timeout):
         Request factor for a Twisted connection factory. During their execution, requests are kept in a set.
         """
         def remove_req(_, req_hash):
+            # type: (Any, int) -> None
             running_reqs.remove(req_hash)
 
         req = wrapped_request_factory(*args, **kwargs)
@@ -53,6 +54,7 @@ def wait_on_shutdown(reactor, site, port, timeout):
         timeout_deferred = Deferred()
 
         def kill_timeout():
+            # type: () -> None
             logger.warning("Timeout reached, canceling %s requests", len(running_reqs))
             timeout_deferred.callback(True)
         reactor.callLater(timeout, kill_timeout)
@@ -61,6 +63,7 @@ def wait_on_shutdown(reactor, site, port, timeout):
         close_conn_deferred = port.stopListening()
 
         def kill_if_requests_done():
+            # type: () -> None
             """
             Call the timeout if all requests are done; otherwise wait a few more seconds.
             """
