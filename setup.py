@@ -13,6 +13,9 @@ with io.open(readme_path, encoding="utf-8") as f:
 setuptools.setup(
     name="retwist",
     packages=setuptools.find_packages(exclude=["tests", "tests.*"]),
+    package_data={
+        "retwist": ["py.typed"],
+    },
     description="Write JSON REST APIs in the Twisted framework",
     long_description=long_description,
     long_description_content_type="text/markdown",
