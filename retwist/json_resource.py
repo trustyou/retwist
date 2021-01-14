@@ -166,24 +166,10 @@ class JsonResource(ParamResource):
                 return
 
         # Unhandled server error - let's log it
-        self.log_exception(exception, failure.getTraceback(), request)
+        log.err(failure, request=request)
 
         # We don't let the client see any part of the exception, since it might expose internals
         self.send_error(INTERNAL_SERVER_ERROR, "Server-side error", request)
-
-    def log_exception(self, exception, traceback, request):
-        # type: (Exception, str, Request) -> None
-        """
-        A server-side error has occurred.
-        :param exception: Exception instance
-        :param traceback: Callstack, already formatted as a multi-line string
-        :param request: Twisted request, which was being handled when exception happened
-        """
-        exception_type = type(exception).__name__
-        error_msg = "{} while handling {} {}\n{}".format(exception_type, request.method, request.uri, traceback)
-
-        # Send to Twisted's logging system
-        log.err(exception, error_msg, request=request)
 
     def send_error(self, status_code, message, request):
         # type: (int, str, Request) -> None
