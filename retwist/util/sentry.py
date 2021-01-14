@@ -6,7 +6,7 @@ from twisted.python.failure import Failure
 
 
 def add_request_context_to_scope(context, scope):
-    # type: (Dict[Any, str], sentry_sdk.Scope) -> None
+    # type: (Dict[str, Any], sentry_sdk.Scope) -> None
     """
     Add context information which is useful for debugging from a Twisted request to a Sentry scope.
     """
