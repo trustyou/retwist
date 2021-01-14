@@ -166,7 +166,7 @@ class JsonResource(ParamResource):
                 return
 
         # Unhandled server error - let's log it
-        log.err(failure, request=request)
+        log.err(failure, context=self.get_context(request))
 
         # We don't let the client see any part of the exception, since it might expose internals
         self.send_error(INTERNAL_SERVER_ERROR, "Server-side error", request)
@@ -189,3 +189,19 @@ class JsonResource(ParamResource):
         :param deferred: The async call to json_GET
         """
         deferred.cancel()
+
+    def get_context(self, request):
+        # type: (Request) -> Dict
+        """
+        Override to add custom context.
+        Override this method to add other custom fields.
+        :param request: The request
+        :return: Dict with the context
+        """
+        return {
+            "url": request.uri,
+            "method": request.method,
+            "headers": request.getAllHeaders(),
+            "query_string": request.uri.replace(request.path, b"").strip(b"?"),
+            "data": request.args
+        }
