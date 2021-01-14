@@ -8,7 +8,6 @@ import pytest
 from twisted.web.http_headers import Headers
 
 from retwist.json_resource import JsonResource
-from retwist.util.sentry import add_request_context_to_scope
 from .common import MyDummyRequest
 
 
@@ -56,16 +55,18 @@ def dummy_request_context():
     }
 
 
-@patch("retwist.util.sentry.add_request_context_to_scope", wraps=add_request_context_to_scope)
-def test_sentry(mock_add_request_context_to_scope, mock_capture_exception, dummy_request, dummy_resource):
+def test_sentry(mock_capture_exception, dummy_request, dummy_resource):
     # Import moved down here because it fails if sentry-sdk isn't installed
     from retwist.util.sentry import enable_sentry_reporting
     enable_sentry_reporting()
 
-    dummy_resource.render(dummy_request)
+    from retwist.util.sentry import add_request_context_to_scope
+    with patch("retwist.util.sentry.add_request_context_to_scope",
+               wraps=add_request_context_to_scope) as mock_add_request_context_to_scope:
+        dummy_resource.render(dummy_request)
 
-    assert mock_capture_exception.called
-    assert mock_add_request_context_to_scope.called
+        assert mock_capture_exception.called
+        assert mock_add_request_context_to_scope.called
 
 
 @pytest.mark.parametrize(
@@ -85,6 +86,8 @@ def test_sentry(mock_add_request_context_to_scope, mock_capture_exception, dummy
 )
 def test_add_request_context_to_scope(sentry_sdk, dummy_request, context, expected_user_id,
                                       expected_custom_context, dummy_request_context):
+    from retwist.util.sentry import add_request_context_to_scope
+
     scope = Mock(spec=sentry_sdk.scope.Scope)
     if expected_custom_context:
         dummy_request_context.update(expected_custom_context)
