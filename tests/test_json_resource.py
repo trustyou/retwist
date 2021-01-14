@@ -159,6 +159,8 @@ def test_error_handling():
         assert isinstance(failure, Failure)
         exception = failure.value
         assert isinstance(exception, TypeError)
+        assert isinstance(event["request"], MyDummyRequest)
+        assert event["context"] == {}
         err_observer.called = True
 
     log.addObserver(err_observer)

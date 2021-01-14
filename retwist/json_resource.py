@@ -183,7 +183,7 @@ class JsonResource(ParamResource):
         error_msg = "{} while handling {} {}\n{}".format(exception_type, request.method, request.uri, traceback)
 
         # Send to Twisted's logging system
-        log.err(exception, error_msg, request=request)
+        log.err(exception, error_msg, request=request, context=self.get_context(request))
 
     def send_error(self, status_code, message, request):
         # type: (int, str, Request) -> None
@@ -203,3 +203,13 @@ class JsonResource(ParamResource):
         :param deferred: The async call to json_GET
         """
         deferred.cancel()
+
+    def get_context(self, request):
+        # type: (Request) -> Dict
+        """
+        Override to add custom context.
+        Override this method to add other custom fields.
+        :param request: The request
+        :return: Dict with the error context
+        """
+        return {}
