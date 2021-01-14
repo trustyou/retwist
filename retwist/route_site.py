@@ -24,7 +24,7 @@ class RouteSite(Site):
         """
         resource = resource or NoResource()
         Site.__init__(self, resource, *args, **kwargs)
-        self.routes = {}  # type: Dict[Pattern, Resource]
+        self.routes = {}  # type: Dict[Pattern[str], Resource]
 
     def addRoute(self, route, resource):
         # type: (str, Resource) -> None

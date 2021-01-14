@@ -43,7 +43,7 @@ class JsonResource(ParamResource):
         raise TypeError("Can't JSON serialize {}".format(type(o).__name__))
 
     def json_GET(self, request):
-        # type: (Request) -> Dict
+        # type: (Request) -> Any
         """
         Override this to return JSON data to render.
         :param request: Twisted request.
@@ -51,7 +51,7 @@ class JsonResource(ParamResource):
         raise NotImplementedError()
 
     def render(self, request):
-        # type: (Request) -> Union[int, bytes]
+        # type: (Request) -> Union[Any, bytes]
         """
         Before we render this request as normal, parse parameters, and add them to the request! Also, catch any errors
         during parameter parsing, and show them appropriately.
@@ -67,7 +67,7 @@ class JsonResource(ParamResource):
             return Resource.render(self, request)
 
     def render_GET(self, request):
-        # type: (Request) -> int
+        # type: (Request) -> Any
         """
         Get JSON data from json_GET, and render for the client.
 
@@ -191,7 +191,7 @@ class JsonResource(ParamResource):
         deferred.cancel()
 
     def get_context(self, request):
-        # type: (Request) -> Dict
+        # type: (Request) -> Dict[str, Any]
         """
         Override to add custom context.
         Override this method to add other custom fields.

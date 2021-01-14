@@ -80,3 +80,22 @@ redirect_twisted_logging()
 
 This will capture any errors logged to [Twisted's logging system](http://twistedmatrix.com/documents/current/core/howto/logging.html)
  and forward exceptions to Sentry. Starting from retwist 0.3, this reports the request URL, headers and data to Sentry.
+
+## Development Notes
+
+Retwist comes with a [tox configuration](tox.ini) to run its test suite on all supported Python versions, as well as a
+linting and type checking step.
+
+It's possible to install all required Python versions locally via [pyenv](https://github.com/pyenv/pyenv).
+Alternatively, use the [sawkita/tox Docker image](https://github.com/acerv/tox-docker) to run the test suite:
+
+```shell
+docker pull sawkita/tox:all
+
+docker container run \
+    --mount src=$PWD,target=/retwist,type=bind \
+    --interactive --tty --rm \
+    --dns 8.8.8.8 \  # Prevents a DNS issue which occurs on some Linux hosts. This is a Google DNS server, but any other would work too
+    sawkita/tox:all \
+    /bin/bash -c "cd /retwist && find -name '*.pyc' -delete && tox"  # Delete stale *.pyc files to avoid errors on Python 2
+```

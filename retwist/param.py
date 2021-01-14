@@ -1,6 +1,6 @@
 import json
 import re
-from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
+from typing import Any, Dict, Generic, Iterable, List, Optional, Tuple, TypeVar, Union
 from uuid import UUID
 
 from twisted.web.error import Error
@@ -11,19 +11,22 @@ try:
     from jsonschema.validators import validator_for
 except ImportError:
     def validator_for(*args, **kwargs):  # type: ignore
-        raise not NotImplementedError("Install with jsonschema extra to enable validating JSON parameters")
+        raise NotImplementedError("Install with jsonschema extra to enable validating JSON parameters")
 
     class ValidationError(Exception):  # type: ignore
         pass
 
 
-class Param(object):
+T = TypeVar("T")
+
+
+class BaseParam(Generic[T]):
     """
     Base class for retwist Parameters. Subclass and override parse() to implement custom parsing behavior.
     """
 
     def __init__(self, required=False, default=None, name=None):
-        # type: (bool, Any, Optional[str]) -> None
+        # type: (bool, Optional[T], Optional[str]) -> None
         """
         :param required: Throw 400 error if parameter is missing
         :param default: Default value, in case parameter missing
@@ -37,7 +40,7 @@ class Param(object):
         self.name = name
 
     def parse_from_request(self, name, request):
-        # type: (str, Request) -> Any
+        # type: (str, Request) -> Optional[T]
         """
         Parse parameter by name from request object. Throws 400 client error if parameter is required, but missing.
         :param name: Name of parameter in query
@@ -60,7 +63,19 @@ class Param(object):
         return self.parse(val)
 
     def parse(self, val):
-        # type: (bytes) -> Any
+        # type: (bytes) -> T
+        """
+        Parse parameter from raw string from URL query. Override this for custom parsing behavior.
+        :param val: Value as received in URL
+        :return: Parsed value
+        """
+        raise NotImplementedError
+
+
+class Param(BaseParam[str]):
+
+    def parse(self, val):
+        # type: (bytes) -> str
         """
         Parse parameter from raw string from URL query. Override this for custom parsing behavior.
         :param val: Value as received in URL
@@ -69,7 +84,7 @@ class Param(object):
         return val.decode()
 
 
-class BoolParam(Param):
+class BoolParam(BaseParam[bool]):
     """
     Evaluates to True if "true" is passed, False otherwise.
     """
@@ -84,13 +99,13 @@ class BoolParam(Param):
         raise Error(BAD_REQUEST, message=b"Boolean parameter must be 'true' or 'false'")
 
 
-class IntParam(Param):
+class IntParam(BaseParam[int]):
     """
     Parse an integer.
     """
 
     def __init__(self, min_val=None, max_val=None, *args, **kwargs):
-        # type: (int, int, *Any, **Any) -> None
+        # type: (Optional[int], Optional[int], *Any, **Any) -> None
         """
         :param min_val: Raise error if value is smaller than this
         :param max_val: Raise error if value is bigger than this
@@ -113,7 +128,7 @@ class IntParam(Param):
         return val_int
 
 
-class EnumParam(Param):
+class EnumParam(BaseParam[str]):
     """
     Allow a pre-defined list of string values; raise 400 client error otherwise.
     """
@@ -143,7 +158,7 @@ class LangParam(Param):
     accept_language_re = re.compile(r"([a-z]{1,8}(?:-[a-z]{1,8})?)\s*(?:;\s*q\s*=\s*(1|0\.[0-9]+))?", re.IGNORECASE)
 
     def parse_from_request(self, name, request):
-        # type: (str, Request) -> str
+        # type: (str, Request) -> Optional[str]
         if b"lang" in request.args:
             return super(LangParam, self).parse_from_request(name, request)
         return self.infer_lang(request)
@@ -180,7 +195,7 @@ class LangParam(Param):
         return default_lang
 
 
-class VersionParam(Param):
+class VersionParam(BaseParam[Tuple[int, ...]]):
     """
     Parse a version from a version string. Return a representation suitable for comparisons, e.g.:
 
@@ -196,7 +211,12 @@ class VersionParam(Param):
             raise Error(BAD_REQUEST, b"Invalid version literal")
 
 
-class JsonParam(Param):
+# Approximate representation of JSON data, for type annotations
+_JSON_OBJECT_TYPE = Dict[str, Any]
+_JSON_TYPE = Union[None, bool, int, float, str, list, _JSON_OBJECT_TYPE]
+
+
+class JsonParam(BaseParam[_JSON_TYPE]):
     """
     Parse a parameter encoded as JSON. You can optionally verify its data format by passing a https://json-schema.org/
     """
@@ -205,10 +225,6 @@ class JsonParam(Param):
     NUMBER_TYPE = {"type": "number"}
     STRING_TYPE = {"type": "string"}
     UUID_TYPE = {"type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"}
-
-    # For type annotations
-    _JSON_OBJECT_TYPE = Dict[str, Any]
-    _JSON_TYPE = Union[None, bool, int, str, list, _JSON_OBJECT_TYPE]
 
     def __init__(self, schema=None, *args, **kwargs):
         # type: (Any, *Any, **Any) -> None
@@ -224,10 +240,10 @@ class JsonParam(Param):
             self.validator = validator_class(schema)
 
     def parse(self, val):
-        # type: (bytes) -> JsonParam._JSON_TYPE
+        # type: (bytes) -> _JSON_TYPE
         val_str = val.decode()
         try:
-            data = json.loads(val_str)
+            data = json.loads(val_str)  # type: _JSON_TYPE
             if self.validator is not None:
                 self.validator.validate(data)
         except ValueError as ex:
@@ -249,7 +265,7 @@ class JsonParam(Param):
         :param min_items: Minimum number of items (optional)
         :param max_items: Maximum number of items (optional)
         """
-        schema = {"type": "array"}  # type: JsonParam._JSON_OBJECT_TYPE
+        schema = {"type": "array"}  # type: _JSON_OBJECT_TYPE
         if items is not None:
             schema["items"] = items
         if min_items is not None:
@@ -259,7 +275,7 @@ class JsonParam(Param):
         return cls(schema, *args, **kwargs)
 
 
-class UUIDParam(Param):
+class UUIDParam(BaseParam[UUID]):
     """
     Parameter that verifies it's a valid UUID.
     """
