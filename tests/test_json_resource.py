@@ -159,8 +159,13 @@ def test_error_handling():
         assert isinstance(failure, Failure)
         exception = failure.value
         assert isinstance(exception, TypeError)
-        assert isinstance(event["request"], MyDummyRequest)
-        assert event["context"] == {}
+        assert event["context"] == {
+            'data': {},
+            'headers': {},
+            'method': b'GET',
+            'query_string': b'http:dummy/',
+            'url': b'http://dummy/'
+        }
         err_observer.called = True
 
     log.addObserver(err_observer)

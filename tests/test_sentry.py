@@ -84,17 +84,21 @@ def test_sentry(mock_capture_exception, dummy_request, dummy_resource):
         )
     ]
 )
-def test_add_request_context_to_scope(sentry_sdk, dummy_request, context, expected_user_id,
-                                      expected_custom_context, dummy_request_context):
+def test_add_request_context_to_scope(context, expected_user_id, expected_custom_context,
+                                      dummy_request_context, sentry_sdk):
     from retwist.util.sentry import add_request_context_to_scope
 
     scope = Mock(spec=sentry_sdk.scope.Scope)
+    request_context = dummy_request_context.copy()
+    expected_context = dummy_request_context.copy()
+    if context:
+        request_context.update(context)
     if expected_custom_context:
-        dummy_request_context.update(expected_custom_context)
+        expected_context.update(expected_custom_context)
     expected_set_user_calls = [call({"id": expected_user_id})] if expected_user_id else []
-    expected_set_context_calls = [call("request", dummy_request_context)]
+    expected_set_context_calls = [call("request", expected_context)]
 
-    add_request_context_to_scope(dummy_request, scope, context)
+    add_request_context_to_scope(request_context, scope)
 
     assert scope.set_user.mock_calls == expected_set_user_calls
     assert scope.set_context.mock_calls == expected_set_context_calls
