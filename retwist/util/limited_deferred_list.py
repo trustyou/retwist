@@ -1,7 +1,7 @@
 import collections
 from typing import Any, Callable, Iterable
 
-from twisted.internet.defer import Deferred
+from twisted.internet.defer import Deferred, FirstError
 from twisted.python.failure import Failure
 
 
@@ -16,8 +16,8 @@ class LimitedDeferredList(Deferred):
     Unlike DeferredList, you can't pass a list of Deferreds to this class, since they would be running already. Instead,
     pass a list of factory methods that make the Deferred on demand.
 
-    If any single one of the Deferreds fails, the overall LimitedDeferredList will errback with the inidividual
-    Deferred's failure object.
+    If any single one of the Deferreds fails, the overall LimitedDeferredList will errback with a FirstError failure,
+    just like the DeferredList.
     """
 
     def __init__(self, deferred_factories, max_concurrent):
@@ -44,7 +44,7 @@ class LimitedDeferredList(Deferred):
         # type: (Any, int) -> None
         """
         Callback for every one of the scheduled Deferreds.
-        :param result: Result of the Deferred
+        :param result: Result of the Deferred.
         :param index: Index in overall result list.
         """
         self.counter -= 1
@@ -54,14 +54,15 @@ class LimitedDeferredList(Deferred):
         if not self.__schedule_deferred() and self.counter == 0:
             self.callback(self.results)
 
-    def __deferred_errback(self, failure):
-        # type: (Failure) -> None
+    def __deferred_errback(self, failure, index):
+        # type: (Failure, int) -> None
         """
         Errback for every one of the scheduled Deferreds. Make the whole LimitedDeferredList fail.
-        :param failure: Failure object
+        :param failure: Failure object.
+        :param index: Index in overall result list.
         """
-        # TODO Should we cancel still running Deferreds?
-        self.errback(failure)
+        if not self.called:
+            self.errback(FirstError(failure, index))
 
     def __schedule_deferred(self):
         # type: () -> bool
@@ -74,6 +75,6 @@ class LimitedDeferredList(Deferred):
             index, deferred_factory = self.deferred_factories.pop()
             deferred = deferred_factory()  # type: Deferred
             deferred.addCallback(self.__deferred_callback, index)
-            deferred.addErrback(self.__deferred_errback)
+            deferred.addErrback(self.__deferred_errback, index)
             return True
         return False

@@ -35,8 +35,9 @@ def log_to_sentry(event):
     if not event.get("isError") or "failure" not in event:
         return
 
-    f = event["failure"]  # type: Failure
-    exc = f.value
+    failure = event["failure"]  # type: Failure
+    exc = failure.value
+    exc_tuple = (type(exc), exc, failure.getTracebackObject())
 
     if all(key in event for key in ["request", "context"]):
         # If a Twisted request has been added as context to the logged event, we can extract useful debug info
@@ -44,9 +45,9 @@ def log_to_sentry(event):
         context = event["context"]  # type: Dict
         with sentry_sdk.push_scope() as scope:
             add_request_context_to_scope(request, scope, context)
-            sentry_sdk.capture_exception(exc)
+            sentry_sdk.capture_exception(exc_tuple)
     else:
-        sentry_sdk.capture_exception(exc)
+        sentry_sdk.capture_exception(exc_tuple)
 
 
 def enable_sentry_reporting():
