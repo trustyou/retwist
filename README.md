@@ -87,15 +87,15 @@ Retwist comes with a [tox configuration](tox.ini) to run its test suite on all s
 linting and type checking step.
 
 It's possible to install all required Python versions locally via [pyenv](https://github.com/pyenv/pyenv).
-Alternatively, use the [sawkita/tox Docker image](https://github.com/acerv/tox-docker) to run the test suite:
+Alternatively, use the [kiwicom/tox Docker image](https://hub.docker.com/r/kiwicom/tox) to run the test suite:
 
 ```shell
-docker pull sawkita/tox:all
+docker pull kiwicom/tox
 
 docker container run \
     --mount src=$PWD,target=/retwist,type=bind \
     --interactive --tty --rm \
     --dns 8.8.8.8 \  # Prevents a DNS issue which occurs on some Linux hosts. This is a Google DNS server, but any other would work too
-    sawkita/tox:all \
+    kiwicom/tox \
     /bin/bash -c "cd /retwist && find -name '*.pyc' -delete && tox"  # Delete stale *.pyc files to avoid errors on Python 2
 ```

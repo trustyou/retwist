@@ -47,4 +47,4 @@ def test_param_resource_error():
     with pytest.raises(Error) as exc_info:
         resource.parse_args(request)
 
-    assert exc_info.value.message == b"Error in parameter uuid: Malformed UUID"
+    assert exc_info.value.message == b"Error in parameter uuid: %s" % retwist.UUIDParam.MALFORMED_ERROR_MSG
