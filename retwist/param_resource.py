@@ -37,7 +37,7 @@ class ParamResource(Resource):
             try:
                 val = param.parse_from_request(name, request)
             except Error as ex:
-                error_msg = "Error in parameter {}: {}".format(name, ex.message).encode("utf-8")
+                error_msg = "Error in parameter {}: {}".format(name, ex.message.decode()).encode("utf-8")
                 raise Error(ex.status, error_msg)
             else:
                 args[name] = val
