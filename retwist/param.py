@@ -280,10 +280,12 @@ class UUIDParam(BaseParam[UUID]):
     Parameter that verifies it's a valid UUID.
     """
 
+    MALFORMED_ERROR_MSG = b"Malformed UUID"
+
     def parse(self, val):
         # type: (bytes) -> UUID
         val_str = val.decode()
         try:
             return UUID(val_str)
         except ValueError:
-            raise Error(BAD_REQUEST, message=b"Malformed UUID")
+            raise Error(BAD_REQUEST, message=UUIDParam.MALFORMED_ERROR_MSG)

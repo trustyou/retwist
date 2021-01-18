@@ -1,4 +1,6 @@
+import pytest
 from twisted.web.test.requesthelper import DummyRequest
+from twisted.web.error import Error
 
 import retwist
 
@@ -6,6 +8,7 @@ import retwist
 class DemoPage(retwist.ParamResource):
 
     id = retwist.Param(required=True)
+    uuid = retwist.UUIDParam()
     show_details = retwist.BoolParam()
     def_param = retwist.BoolParam(name="def")
 
@@ -31,3 +34,17 @@ def test_param_resource_override_name():
     resource = DemoPage()
     args = resource.parse_args(request)
     assert args["def"] is True
+
+
+def test_param_resource_error():
+
+    request = DummyRequest("/")
+    request.addArg(b"id", b"1234")
+    request.addArg(b"uuid", b"1234")
+
+    resource = DemoPage()
+
+    with pytest.raises(Error) as exc_info:
+        resource.parse_args(request)
+
+    assert exc_info.value.message == retwist.ParamResource.ERROR_MSG % (b"uuid", retwist.UUIDParam.MALFORMED_ERROR_MSG)
