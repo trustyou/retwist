@@ -19,6 +19,8 @@ class ParamResource(Resource):
     You can then retrieve parameters by calling parse_args(request) in your render_* method.
     """
 
+    ERROR_MSG = b"Error in parameter %s: %s"
+
     def parse_args(self, request):
         # type: (Request) -> Dict[str, Any]
         """
@@ -37,7 +39,7 @@ class ParamResource(Resource):
             try:
                 val = param.parse_from_request(name, request)
             except Error as ex:
-                error_msg = b"Error in parameter %s: %s" % (name.encode(), ex.message)
+                error_msg = ParamResource.ERROR_MSG % (name.encode(), ex.message)
                 raise Error(ex.status, error_msg)
             else:
                 args[name] = val
