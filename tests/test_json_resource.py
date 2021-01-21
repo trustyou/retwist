@@ -126,11 +126,6 @@ def test_async_json_resource():
 
 
 class SyncBrokenPage(retwist.JsonResource):
-
-    def __init__(self):
-        retwist.JsonResource.__init__(self)
-        self.failed = False
-
     def json_GET(self, request):
         None / 0.0
         request.write(b"Successfully divided by zero!")
@@ -138,11 +133,6 @@ class SyncBrokenPage(retwist.JsonResource):
 
 
 class AsyncBrokenPage(retwist.JsonResource):
-
-    def __init__(self):
-        retwist.JsonResource.__init__(self)
-        self.failed = False
-
     @defer.inlineCallbacks
     def json_GET(self, request):
         yield task.deferLater(reactor, 0.001, lambda: None / 0.0)
