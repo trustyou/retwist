@@ -1,9 +1,12 @@
+# coding: utf-8
+
 import json
 
 import pytest_twisted
 from twisted.internet import reactor, defer, task
 from twisted.python import log
 from twisted.python.failure import Failure
+from twisted.web.error import Error
 from twisted.web.server import NOT_DONE_YET
 
 import retwist
@@ -179,3 +182,20 @@ def test_error_handling():
         assert err_observer.called is True, "Error handler not called for {}".format(type(resource).__name__)
 
     log.removeObserver(err_observer)
+
+
+@pytest_twisted.inlineCallbacks
+def test_special_character_in_error_msg():
+    # This triggered a server-side exception in retwist <= 0.4.1
+
+    class BrokenPage(retwist.JsonResource):
+        def json_GET(self, request):
+            msg = u"This error message contains ümläüts".encode("utf-8")
+            raise Error(400, msg)
+
+    resource = BrokenPage()
+    request = MyDummyRequest([b"/"])
+
+    yield _render(resource, request)
+
+    assert request.responseCode == 400
