@@ -161,7 +161,7 @@ class JsonResource(ParamResource):
             web_error = exception  # type: Error
             status_code = int(web_error.status)
             if 400 <= status_code < 500:
-                message = str(exception)
+                message = u"{} {}".format(status_code, web_error.message.decode("utf-8"))
                 self.send_error(status_code, message, request)
                 return
 

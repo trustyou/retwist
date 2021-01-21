@@ -25,6 +25,8 @@ class BaseParam(Generic[T]):
     Base class for retwist Parameters. Subclass and override parse() to implement custom parsing behavior.
     """
 
+    encoding = "utf-8"
+
     def __init__(self, required=False, default=None, name=None):
         # type: (bool, Optional[T], Optional[str]) -> None
         """
@@ -47,7 +49,7 @@ class BaseParam(Generic[T]):
         :param request: Twisted request object
         :return: Parsed value
         """
-        name_bytes = name.encode()
+        name_bytes = name.encode(self.encoding)
         if name_bytes not in request.args:
             if self.default is not None:
                 return self.default
@@ -81,7 +83,7 @@ class Param(BaseParam[str]):
         :param val: Value as received in URL
         :return: Parsed value
         """
-        return val.decode()
+        return val.decode(self.encoding)
 
 
 class BoolParam(BaseParam[bool]):
@@ -91,10 +93,9 @@ class BoolParam(BaseParam[bool]):
 
     def parse(self, val):
         # type: (bytes) -> bool
-        val_str = val.decode()
-        if val_str is None or val_str == "false":
+        if val is None or val == b"false":
             return False
-        if val_str == "true":
+        if val == b"true":
             return True
         raise Error(BAD_REQUEST, message=b"Boolean parameter must be 'true' or 'false'")
 
@@ -116,9 +117,8 @@ class IntParam(BaseParam[int]):
 
     def parse(self, val):
         # type: (bytes) -> int
-        val_str = val.decode()
         try:
-            val_int = int(val_str)
+            val_int = int(val)
         except (TypeError, ValueError):
             raise Error(BAD_REQUEST, b"Invalid integer: %s" % val)
         if self.min_val is not None and val_int < self.min_val:
@@ -143,7 +143,7 @@ class EnumParam(BaseParam[str]):
 
     def parse(self, val):
         # type: (bytes) -> str
-        val_str = val.decode()
+        val_str = val.decode(self.encoding)
         if val_str not in self.enum:
             error_msg = b"Parameter must be one of %s" % str(sorted(self.enum)).encode()
             raise Error(BAD_REQUEST, error_msg)
@@ -204,9 +204,8 @@ class VersionParam(BaseParam[Tuple[int, ...]]):
 
     def parse(self, val):
         # type: (bytes) -> Tuple[int, ...]
-        val_str = val.decode()
         try:
-            return tuple(map(int, val_str.split(".")))
+            return tuple(map(int, val.split(b".")))
         except (TypeError, ValueError):
             raise Error(BAD_REQUEST, b"Invalid version literal")
 
@@ -241,9 +240,8 @@ class JsonParam(BaseParam[_JSON_TYPE]):
 
     def parse(self, val):
         # type: (bytes) -> _JSON_TYPE
-        val_str = val.decode()
         try:
-            data = json.loads(val_str)  # type: _JSON_TYPE
+            data = json.loads(val)  # type: _JSON_TYPE
             if self.validator is not None:
                 self.validator.validate(data)
         except ValueError as ex:

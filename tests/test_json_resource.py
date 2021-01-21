@@ -1,9 +1,12 @@
+# coding: utf-8
+
 import json
 
 import pytest_twisted
 from twisted.internet import reactor, defer, task
 from twisted.python import log
 from twisted.python.failure import Failure
+from twisted.web.error import Error
 from twisted.web.server import NOT_DONE_YET
 
 import retwist
@@ -123,11 +126,6 @@ def test_async_json_resource():
 
 
 class SyncBrokenPage(retwist.JsonResource):
-
-    def __init__(self):
-        retwist.JsonResource.__init__(self)
-        self.failed = False
-
     def json_GET(self, request):
         None / 0.0
         request.write(b"Successfully divided by zero!")
@@ -135,11 +133,6 @@ class SyncBrokenPage(retwist.JsonResource):
 
 
 class AsyncBrokenPage(retwist.JsonResource):
-
-    def __init__(self):
-        retwist.JsonResource.__init__(self)
-        self.failed = False
-
     @defer.inlineCallbacks
     def json_GET(self, request):
         yield task.deferLater(reactor, 0.001, lambda: None / 0.0)
@@ -179,3 +172,38 @@ def test_error_handling():
         assert err_observer.called is True, "Error handler not called for {}".format(type(resource).__name__)
 
     log.removeObserver(err_observer)
+
+
+@pytest_twisted.inlineCallbacks
+def test_special_character_in_error_msg():
+    # This triggered a server-side exception in retwist <= 0.4.1
+
+    class BrokenPage(retwist.JsonResource):
+        def json_GET(self, request):
+            msg = u"This error message contains ümläüts".encode("utf-8")
+            raise Error(400, msg)
+
+    resource = BrokenPage()
+    request = MyDummyRequest([b"/"])
+
+    yield _render(resource, request)
+
+    assert request.responseCode == 400
+
+
+@pytest_twisted.inlineCallbacks
+def test_special_character_in_parameter():
+    # This triggered a server-side exception in retwist <= 0.4.1 for Python 2
+
+    request = MyDummyRequest([b"/"])
+    special_chars = u"Spécial cháracters"
+    request.addArg(b"id", special_chars.encode("utf-8"))
+
+    resource = EchoArgsPage()
+
+    yield _render(resource, request)
+
+    response_str = b"".join(request.written)
+    response = json.loads(response_str)
+
+    assert response["id"] == special_chars
