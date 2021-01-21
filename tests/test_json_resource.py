@@ -199,3 +199,21 @@ def test_special_character_in_error_msg():
     yield _render(resource, request)
 
     assert request.responseCode == 400
+
+
+@pytest_twisted.inlineCallbacks
+def test_special_character_in_parameter():
+    # This triggered a server-side exception in retwist <= 0.4.1 for Python 2
+
+    request = MyDummyRequest([b"/"])
+    special_chars = u"Spécial cháracters"
+    request.addArg(b"id", special_chars.encode("utf-8"))
+
+    resource = EchoArgsPage()
+
+    yield _render(resource, request)
+
+    response_str = b"".join(request.written)
+    response = json.loads(response_str)
+
+    assert response["id"] == special_chars

@@ -1,3 +1,6 @@
+# coding: utf-8
+
+import json
 from uuid import UUID
 
 import pytest
@@ -25,6 +28,7 @@ def dummy_request():
         b"lang": [b"de"],
         b"v": [b"1.0"],
         b"key": [b"523f2850-5646-4832-9507-e99e144328c8"],
+        b"payload": [json.dumps({"msg": u"Ümlauts supported"})],
     }
     return request
 
@@ -180,8 +184,8 @@ def test_json_param(dummy_request):
 
     json_param = JsonParam()
 
-    val = json_param.parse_from_request("count", dummy_request)
-    assert val == 20
+    val = json_param.parse_from_request("payload", dummy_request)
+    assert val == {"msg": u"Ümlauts supported"}
 
     with pytest.raises(Error) as exc_info:
         json_param.parse(b'invalid: "json"')
