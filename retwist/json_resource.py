@@ -1,7 +1,7 @@
 import json
 import re
 from logging import getLogger
-from typing import Any, Dict, Optional, Union
+from typing import Any, Callable, Coroutine, Dict, Optional, Union
 
 try:
     from inspect import iscoroutinefunction
@@ -50,6 +50,38 @@ class JsonResource(ParamResource):
         """
         raise NotImplementedError()
 
+    def json_PUT(self, request):
+        # type: (Request) -> Any
+        """
+        Override this to return JSON data to render.
+        :param request: Twisted request.
+        """
+        raise NotImplementedError()
+
+    def json_POST(self, request):
+        # type: (Request) -> Any
+        """
+        Override this to return JSON data to render.
+        :param request: Twisted request.
+        """
+        raise NotImplementedError()
+
+    def json_PATCH(self, request):
+        # type: (Request) -> Any
+        """
+        Override this to return JSON data to render.
+        :param request: Twisted request.
+        """
+        raise NotImplementedError()
+
+    def json_DELETE(self, request):
+        # type: (Request) -> Any
+        """
+        Override this to return JSON data to render.
+        :param request: Twisted request.
+        """
+        raise NotImplementedError()
+
     def render(self, request):
         # type: (Request) -> Union[Any, bytes]
         """
@@ -66,19 +98,20 @@ class JsonResource(ParamResource):
         else:
             return Resource.render(self, request)
 
-    def render_GET(self, request):
-        # type: (Request) -> Any
+    def render_json(self, request, handler):
+        # type: (Request, Union[Coroutine, Callable]) -> Any
         """
-        Get JSON data from json_GET, and render for the client.
+        Get JSON data from json_[GET|PUT|POST|PATCH|DELETE], and render for the client.
 
         Do not override in sub classes ...
         :param request: Twisted request
+        :param handler: Handler function
         """
-        if iscoroutinefunction(self.json_GET):
-            coroutine = self.json_GET(request)
+        if iscoroutinefunction(handler):
+            coroutine = handler(request)
             json_def = ensureDeferred(coroutine)  # type: Deferred
         else:
-            json_def = maybeDeferred(self.json_GET, request)
+            json_def = maybeDeferred(handler, request)
 
         json_def.addCallback(self.send_json_response, request)
         json_def.addErrback(self.handle_failure, request)
@@ -87,6 +120,56 @@ class JsonResource(ParamResource):
         request.notifyFinish().addErrback(self.on_connection_closed, json_def)
 
         return NOT_DONE_YET
+
+    def render_GET(self, request):
+        # type: (Request) -> Any
+        """
+        Get JSON data from json_GET, and render for the client.
+
+        Do not override in sub classes ...
+        :param request: Twisted request
+        """
+        return self.render_json(request, self.json_GET)
+
+    def render_PUT(self, request):
+        # type: (Request) -> Any
+        """
+        Get JSON data from json_PUT, and render for the client.
+
+        Do not override in sub classes ...
+        :param request: Twisted request
+        """
+        return self.render_json(request, self.json_PUT)
+
+    def render_POST(self, request):
+        # type: (Request) -> Any
+        """
+        Get JSON data from json_POST, and render for the client.
+
+        Do not override in sub classes ...
+        :param request: Twisted request
+        """
+        return self.render_json(request, self.json_POST)
+
+    def render_PATCH(self, request):
+        # type: (Request) -> Any
+        """
+        Get JSON data from json_PATCH, and render for the client.
+
+        Do not override in sub classes ...
+        :param request: Twisted request
+        """
+        return self.render_json(request, self.json_PATCH)
+
+    def render_DELETE(self, request):
+        # type: (Request) -> Any
+        """
+        Get JSON data from json_GET, and render for the client.
+
+        Do not override in sub classes ...
+        :param request: Twisted request
+        """
+        return self.render_json(request, self.json_DELETE)
 
     def response_envelope(self, response, status_code=200, status_message=None):
         # type: (Any, int, Optional[str]) -> Any
