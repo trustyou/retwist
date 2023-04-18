@@ -2,6 +2,7 @@
 
 import json
 
+import pytest
 import pytest_twisted
 from twisted.internet import reactor, defer, task
 from twisted.python import log
@@ -13,6 +14,15 @@ import retwist
 from tests.common import _render, MyDummyRequest
 
 
+@pytest.fixture(scope="module", params=[b"GET", b"PUT", b"POST", b"PATCH", b"DELETE"])
+def dummy_request(request):
+    dummy_request = MyDummyRequest([b"/"])
+    dummy_request.addArg(b"id", b"1234")
+    dummy_request.addArg(b"show_details", b"false")
+    dummy_request.method = request.param
+    return dummy_request
+
+
 class EchoArgsPage(retwist.JsonResource):
 
     id = retwist.Param(required=True)
@@ -21,22 +31,33 @@ class EchoArgsPage(retwist.JsonResource):
     def json_GET(self, request):
         return request.url_args
 
+    def json_PUT(self, request):
+        return request.url_args
+
+    def json_POST(self, request):
+        return request.url_args
+
+    def json_PATCH(self, request):
+        return request.url_args
+
+    def json_DELETE(self, request):
+        return request.url_args
+
+
+@pytest.fixture
+def echo_args_page():
+    return EchoArgsPage()
+
 
 @pytest_twisted.inlineCallbacks
-def test_json_resource():
+def test_json_resource(echo_args_page, dummy_request):
     """
     Test regular synchronous JSON rendering.
     """
 
-    request = MyDummyRequest([b"/"])
-    request.addArg(b"id", b"1234")
-    request.addArg(b"show_details", b"false")
+    yield _render(echo_args_page, dummy_request)
 
-    resource = EchoArgsPage()
-
-    yield _render(resource, request)
-
-    response_str = b"".join(request.written)
+    response_str = b"".join(dummy_request.written)
     response = json.loads(response_str.decode())
 
     assert response == {
